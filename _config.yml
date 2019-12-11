@@ -1,0 +1,11 @@
+title: Darker Ink
+description: Personal blog of Felipe Erias
+url: "" # the base hostname & protocol for your site, e.g. http://example.com
+email: felipeerias@gmail.com
+twitter_username: felipeerias
+github_username:  felipeerias
+
+theme: jekyll-theme-cayman
+
+plugins:
+  - jekyll-feed
