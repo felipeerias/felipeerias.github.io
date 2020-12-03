@@ -71,6 +71,14 @@ Since the beginning of 2020, I have been contributing to the Chromium Web browse
 * Support the Japanese page sizes JIS B5 and JIS B4: Bug 1047642
 * Improved warnings in link preload: Bug 1047945
 
+### Related work: nanjs
+
+Making direct connectivity available to websites would enable them to create fast and convenient connections between users who are physically close, opening the door to new kinds of Web solutions. However, this would have to be done carefully to ensure privacy and security.
+
+The [nanjs proposal](https://github.com/felipeerias/nan-js-proposal) describes a draft JavaScript API for direct connectivity that balances usefulness and user safety by changing the conceptual model: instead of discovering and being discovered by every other node nearby, Web applications would register their interest in individual user sessions and would only be able to discover and connect to those. The goal is to make it easy to discover and connect to people who have allowed you to do so, and only to them.
+
+Submitted at the W3's [Web Platform Incubator community group](https://discourse.wicg.io/t/proposal-neighbour-awareness-networking-js-api/3478).
+
 ## Terranet: R&D design and development (2015–2019)
 
 Terranet AB is a Swedish R&D company specialised on next-generation proximity networks, which allow mobile devices to find and connect to each other in a quick and seamless way.
