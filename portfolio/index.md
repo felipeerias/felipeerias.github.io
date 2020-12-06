@@ -1,9 +1,7 @@
 ---
 layout: post
-title: Portfolio | Felipe Erias
+title: Portfolio
 ---
-
-# Portfolio
 
 ## Summary
 
