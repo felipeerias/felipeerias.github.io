@@ -91,6 +91,8 @@ I worked on design and development across several layers of the stack. I develop
 
 On top of this framework, I built several demos and prototypes to communicate the usefulness of these network technologies. You can read more about this work in this blog post **TODO link mobile-design-with-device-to-device-networks**, or hear me explain it in [this talk at FOSDEM in Brussels](https://fosdem.org/2019/schedule/event/device_to_device_networks/). One of these apps came from the design that I created as part of my master thesis at the University of Malmö, you can read more about this prototype in this blog post **TODO link p2p-presentations**.
 
+{% include vimeoPlayer.html id=418958383 %}
+
 https://vimeo.com/418958383
 
 https://vimeo.com/418946453
