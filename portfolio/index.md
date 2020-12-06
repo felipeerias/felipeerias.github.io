@@ -93,17 +93,15 @@ On top of this framework, I built several demos and prototypes to communicate th
 
 {% include vimeoPlayer.html id=418958383 %}
 
-https://vimeo.com/418958383
+{% include vimeoPlayer.html id=418946453 %}
 
-https://vimeo.com/418946453
+{% include vimeoPlayer.html id=418946837 %}
 
-https://vimeo.com/418946837
+{% include vimeoPlayer.html id=418946396 %}
 
-https://vimeo.com/418946396
+{% include vimeoPlayer.html id=418946153 %}
 
-https://vimeo.com/418946153
-
-https://vimeo.com/418945947
+{% include vimeoPlayer.html id=418945947 %}
 
 ## IxD Master Thesis: “Emergent IoT configurations for same-place collaboration” (2015)
 
@@ -113,7 +111,7 @@ There is an opportunity to discover rich interaction possibilities in the combin
 
 ![mp_photo.jpg](/assets/img/mp_photo.jpg)
 
-https://vimeo.com/130228635
+{% include vimeoPlayer.html id=130228635 %}
 
 You can check this work at the [Malmö university website](https://dspace.mah.se/handle/2043/19439) or download one of the links below:
 
@@ -132,11 +130,11 @@ With these insights, we created an interactive installation in the form of a lar
 
 The installation was surprising and engaging for participants. In this video, we demonstrate it to our coursemates and professors:
 
-https://vimeo.com/418947202
+{% include vimeoPlayer.html id=418947202 %}
 
 I took part in user research and ideation, and wrote the Arduino and OpenFrameworks code that powered it. The video below shows in more detail the OpenFrameworks program that employed a Kinect to turn the user's movements into paint.
 
-https://vimeo.com/418947272
+{% include vimeoPlayer.html id=418947272 %}
 
 ![kinect_prototype.jpg](/assets/img/kinect_prototype.jpg)
 
@@ -187,7 +185,7 @@ In my community work, I had a special focus on the design of Web browsers,a topi
 
 Based on this, I then created an interactive prototype to test some of these concepts, and also to make a case for trying out and sharing more design ideas in the Free SW community. This work was the basis for two talks on “Sketching interactions” at the international Free SW conferences GUADEC 2012 and FOSDEM 2013.
 
-https://vimeo.com/58463484
+{% include vimeoPlayer.html id=58463484 %}
 
 Additionally, I have also contributed concept proposals and other work:
 
