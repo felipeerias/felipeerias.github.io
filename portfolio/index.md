@@ -17,30 +17,30 @@ I hold a 5-year degree in SW Engineering at the University of Coruña (Spain, 20
 
 **TODO: link CV**
 
-# Education
+## Education
 
-## Master in Interaction Design
+### Master in Interaction Design
 
 University of Malmö, Sweden (2014 - 2015)
 
 Thesis: _"Emergent IoT configurations for same-place collaboration"_. Supervised by Jonas Lowgren within the Internet of Things and People research group, in collaboration with Terranet AB
 
-## MSc. in Human-Centred Interactive Technologies
+### MSc. in Human-Centred Interactive Technologies
 
 University of York, UK (2009 - 2010).
 
 MSc. Project: _"Design and evaluation of an interface for finding and opening documents"_. Graduated with distinction.
 
-## Engineering in Computer Science
+### Engineering in Computer Science
 
 University of Corunna, Spain (2000 - 2006)
 
 Final year project: _"Compilation of BPEL conditions & assign activities into Java code"_ at the University of Stuttgart, Germany.
 Internship at IBM Deutschland GmbH. (2006 - 2007)
 
-# Highlighted work
+## Highlighted work
 
-## Free SW contributions
+### Free SW contributions
 
 * Contributions to [Chromium](https://chromium.googlesource.com/chromium/src.git)
 * Contributions to [eos-sdk](https://github.com/endlessm/eos-sdk/commits?author=felipeerias)
@@ -57,7 +57,7 @@ Internship at IBM Deutschland GmbH. (2006 - 2007)
 
 (Please keep reading to find each of these in the context of its project)
 
-## Chromium Web browser (2020–present)
+### Chromium Web browser (2020–present)
 
 Since the beginning of 2020, I have been contributing to the Chromium Web browser. This is some of the work that I've done:
 
@@ -73,7 +73,7 @@ Since the beginning of 2020, I have been contributing to the Chromium Web browse
 * Support the Japanese page sizes JIS B5 and JIS B4: [Bug 1047642](https://crbug.com/1047642)
 * Improved warnings in link preload: [Bug 1047945](https://crbug.com/1047945)
 
-### Related work: nanjs
+### nanjs
 
 Making direct connectivity available to websites would enable them to create fast and convenient connections between users who are physically close, opening the door to new kinds of Web solutions. However, this would have to be done carefully to ensure privacy and security.
 
@@ -81,7 +81,7 @@ The [nanjs proposal](https://github.com/felipeerias/nan-js-proposal) describes a
 
 Submitted at the W3's [Web Platform Incubator community group](https://discourse.wicg.io/t/proposal-neighbour-awareness-networking-js-api/3478).
 
-## Terranet: R&D design and development (2015–2019)
+### Terranet: R&D design and development (2015–2019)
 
 [Terranet AB](https://terranet.se/) is a Swedish R&D company specialised on next-generation proximity networks, which allow mobile devices to find and connect to each other in a quick and seamless way.
 
@@ -101,7 +101,7 @@ On top of this framework, I built several demos and prototypes to communicate th
 
 {% include vimeoPlayer.html id=418945947 %}
 
-## IxD Master Thesis: “Emergent IoT configurations for same-place collaboration” (2015)
+### IxD Master Thesis: “Emergent IoT configurations for same-place collaboration” (2015)
 
 For my master thesis, I designed and prototyped a solution to make presentations more flexible and collaborative. At the start of the meeting, attendees can join an ad-hoc mesh network just by tapping their phones together. Each slide selected by the presenter is shown simultaneously in the projector and the audience’s devices. There is a fluid workflow for requesting and handing over control of the projector, which encourages sharing and makes the interaction between presenter and audience more collaborative. One of my goals was to help the presenter take on the role of a moderator. This design was evaluated through group sessions and two live presentations using the prototype.
 
@@ -116,7 +116,7 @@ You can check this work at the [Malmö university website](https://dspace.mah.se
 * [Report](https://darker.ink/static/media/TP1_IDM_Felipe_Erias_FINAL.pdf)
 * [Presentation](https://darker.ink/static/media/TP1_IDM_Felipe_Erias_presentation.pdf)
 
-## IxD Project: “Transgenerational Transmission Machine” (2014)
+### IxD Project: “Transgenerational Transmission Machine” (2014)
 
 A group project developed under the brief “Archiving the intangible”. We explored opportunities for audience engagement and cross-generational communication through embodied interaction. An initial research phase used cultural probes to provide inspiration for design, asking participants to illustrate each other’s childhood stories.
 
@@ -140,7 +140,7 @@ To read more:
 
 * [Report](/assets/pdf/malmo_felipeerias_project.pdf)
 
-## Igalia: GNOME development (2013‑2014)
+### Igalia: GNOME development (2013‑2014)
 
 For over a year, I worked with [Endless](https://endlessos.com/) in adapting the GNOME desktop to make it suitable for embedded computers targeted at the developing world. This project had a strong focus on design and UX, not just to make it attractive, but to ensure that the solution was suited for the intended audience and context.
 
@@ -153,7 +153,7 @@ For over a year, I worked with [Endless](https://endlessos.com/) in adapting the
 
 ![endlessdesktop.jpg](/assets/img/endlessdesktop.jpg)
 
-## Igalia: Android mediacenter (2013)
+### Igalia: Android mediacenter (2013)
 
 Interaction design and development for a multimedia mediacenter, to be integrated in TV and mobile Android devices. The application was capable of listing content from a expandable set of many different media sources. This project was carried out as part of a R&D consortium integrated by several Spanish companies.
 
@@ -171,7 +171,7 @@ To know more:
 [mediacenter_felipeerias_TV2.pdf](/assets/pdf/mediacenter_felipeerias_TV2.pdf)
 [mediacenter_felipeerias_tablet.pdf](/assets/pdf/mediacenter_felipeerias_tablet.pdf)
 
-## Igalia: GNOME design (2012‑2014)
+### Igalia: GNOME design (2012‑2014)
 
 In my community work, I had a special focus on the design of Web browsers,a topic of strategic relevance for my former company. I carried out research and concept development in a series of blog posts:
 
@@ -192,7 +192,7 @@ Additionally, I have also contributed concept proposals and other work:
 * [Overview widget](https://wiki.gnome.org/Design/Whiteboards/Overview)
 * [Informative Back button](https://wiki.gnome.org/Design/Whiteboards/Back)
 
-## Igalia: MeeGo development (2011)
+### Igalia: MeeGo development (2011)
 
 MeeGo was the operating system that powered the Nokia N9. It was based on GNU/Linux, with a user interface developed in Qt.
 
@@ -203,7 +203,7 @@ I took part for one year in the development of the [MeeGoTouch widget library](h
 
 ![n9.jpg](/assets/img/n9.jpg)
 
-## HCI MSc. Project: “Design and evaluation of an interface for finding and opening documents” (2010)
+### HCI MSc. Project: “Design and evaluation of an interface for finding and opening documents” (2010)
 
 For my MSc. Project at the University of York I designed an interface to better match document retrieval with the way human memory works. I focused on the file-opening dialog as a point of contact between the personal archive and the current activity.
 
@@ -219,7 +219,7 @@ To know more:
 [york_felipeerias_presentation.pdf](/assets/pdf/york_felipeerias_presentation.pdf)
 [york_felipeerias_paper.pdf](/assets/pdf/york_felipeerias_paper.pdf)
 
-## Igalia: Maemo development (2007‑2009)
+### Igalia: Maemo development (2007‑2009)
 
 Maemo was the operating system for a range of Nokia tablets and phones: N800, N810, and N900. These were extremely innovative devices for their time, providing full computing capabilities and a fluid UI. In particular, Maemo was developed using desktop GNU/Linux technologies and the GTK+ widget toolkit. I worked on a range of projects for the core of the platform.
 
