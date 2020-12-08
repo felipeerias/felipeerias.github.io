@@ -82,7 +82,7 @@ Drawings are shared in real time, using a simple binary protocol for better perf
 
 The strokes are not permanent and will fade after a few seconds: this is both to keep the UI simple and to make the implementation easier. However, one can easily imagine a future version of the app where these strokes could be stored, enabling the participants to create a drawing together.
 
-{% include vimeoPlayer.html id=https://vimeo.com/488411774 %}
+{% include vimeoPlayer.html id=488411774 %}
 
 Often, speakers carry out informal polls through a show of hands; we cover this use case by allowing the creation of polls right in the app. There is also a chat for the people attending the presentation. These are rather simple features, but they are interesting because they point the way towards more elaborate ways for the whole audience to interact with each other through the app.
 
