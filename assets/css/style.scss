@@ -64,8 +64,8 @@ h3 {
 }
 
 .page-header a {
-    color: #fffe;
-    text-decoration: none;
+  color: #fffe;
+  text-decoration: none;
 }
 
 .navigation {
@@ -75,10 +75,10 @@ h3 {
 .navigation a {
   color: #fffe;
   font-family: "Raleway", sans-serif;
-  text-decoration: none;
-  font-weight: 600 !important;
-  display: block;
-  font-size: 1.8rem;
+  font-weight: 300 !important;
+  font-size: 1.4rem;
+  margin-left: 2.8rem;
+  margin-right: 2.8rem;
 }
 
 .page-header h1 {
@@ -90,6 +90,11 @@ h3 {
 .page-header h1,
 .page-header h2 {
   color: #fffe !important;
+}
+
+.page-header h2 {
+  margin-top: 1.8rem;
+  margin-bottom: 1rem;
 }
 
 p:first-of-type,
