@@ -29,7 +29,6 @@ We took great care in designing the probes to provoke inspirational responses: t
 
 The participants were eight people between 8 and 83 years old, who filled the probes at locations familiar for them. Each took on both roles, first writing down a story and then illustrating one coming from another person. Having to reinterpret somebody else’s personal tale required empathy and imagination, creating an emotional bond: we tried to replicate this rewarding experience in our design.
 
-![header](/assets/img/machine.jpg "header")
 ![probe](https://darker.ink/static/media/uploads/probe.jpg "probe")
 ![collage2](https://darker.ink/static/media/uploads/m_collage2.jpg "collage2")
 ![collage3](https://darker.ink/static/media/uploads/m_collage3.jpg "collage3")
