@@ -11,6 +11,8 @@ $blockquote-text-color: #2e414d;
 
 @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&family=Raleway:ital,wght@0,300;0,600;1,800&display=swap');
 
+/* BODY */
+
 body {
   font-family: 'Crimson Text', serif;
   font-weight: 400;
@@ -54,48 +56,6 @@ h3 {
   margin-bottom: 1.25rem;
 }
 
-.page-header {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-    color: #fffe;
-    text-align: center;
-    background-color: #08334d;
-    background-image: linear-gradient(60deg, #3d7699, #08334d);
-}
-
-.page-header a {
-  color: #fffe;
-  text-decoration: none;
-}
-
-.navigation {
-  margin: 1.25rem;
-}
-
-.navigation a {
-  color: #fffe;
-  font-family: "Raleway", sans-serif;
-  font-weight: 300 !important;
-  font-size: 1.4rem;
-  margin-left: 2.8rem;
-  margin-right: 2.8rem;
-}
-
-.page-header h1 {
-  font-size: 2.1rem;
-  font-weight: 800;
-  font-style: italic;
-}
-
-.page-header h1,
-.page-header h2 {
-  color: #fffe !important;
-}
-
-.page-header h2 {
-  margin-top: 1.8rem;
-  margin-bottom: 1rem;
-}
 
 p:first-of-type,
 h2 + p {
@@ -126,6 +86,48 @@ p.indented {
   font-style: italic;
   color: rgba(0, 0, 0, 0.87);
 }
+
+/* HEADER */
+
+.page-header {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    color: #fffe !important;
+    text-align: center;
+    background-color: #08334d;
+    background-image: linear-gradient(60deg, #3d7699, #08334d);
+}
+
+.page-header a {
+  color: #fffe !important;
+  text-decoration: none !important;
+}
+
+.page-header h1 {
+  font-size: 2.1rem !important;
+  font-weight: 800 !important;
+  font-style: italic;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.page-header h2 {
+  font-size: 1.25rem !important;
+  font-weight: 300 !important;
+  opacity: 1.0;
+  margin-top: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.navigation a {
+  font-family: "Raleway", sans-serif;
+  font-weight: 600 !important;
+  font-size: 1.4rem;
+  margin-left: 1.4rem;
+  margin-right: 1.4rem;
+}
+
+/* OTHER */
 
 .navbar,
 .panel,
