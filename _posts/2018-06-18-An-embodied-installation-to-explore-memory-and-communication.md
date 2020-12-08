@@ -44,7 +44,7 @@ The experience is embodied and requires participants to move around the space an
 
 {% include vimeoPlayer.html id=418947202 %}
 
-### Roles
+### Roles
 
 The narrator tells a story to an intentionally large and whimsical microphone. In that position, her view of the rest of the machine is partially blocked, providing a small measure of intimacy that helps her focus on the tale. As she speaks, an Arduino-activated motor lets colored water drip on the paper. Currently, these narratives are improvised on the spot: future iterations contemplate the use of scripts or prompts.
 
