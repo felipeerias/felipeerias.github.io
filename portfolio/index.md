@@ -7,7 +7,9 @@ title: Portfolio
 
 I am a Software Engineer and Interaction Designer.
 
-At the moment, I am contributing to the [Chromium](https://chromium.googlesource.com/chromium/src.git) Web browser. I am also collaborating with the [University of Kyoto's CSEAS](https://en.kyoto.cseas.kyoto-u.ac.jp/) as an affiliated researcher.
+Since December 2020, I am part of the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers).
+
+I am also contributing to the [Chromium](https://chromium.googlesource.com/chromium/src.git) Web browser and collaborating with the [University of Kyoto's CSEAS](https://en.kyoto.cseas.kyoto-u.ac.jp/) as an affiliated researcher.
 
 From 2015 to 2019, I worked at [Terranet AB](http://www.terranet.se/), a Swedish R&D company focused on proximity networks, designing and implementing innovative mobile software that took advantage of next-generation P2P connectivity.
 
@@ -56,6 +58,12 @@ Internship at IBM Deutschland GmbH. (2006 - 2007)
 * Contributions to [modest](https://gitorious.org/maemo-garage/modest.git/?p=maemo-garage:modest.git;a=search;s=Felipe+Erias+Morandeira;st=author)
 
 (Please keep reading to find each of these in the context of its project)
+
+### Igalia: Web platform (2020–present)
+
+Since December 2020, I am part of the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers).
+
+I am a participant in the [W3C Cascading Style Sheets (CSS) Working Group](https://www.w3.org/Style/CSS/).
 
 ### Chromium Web browser (2020–present)
 
