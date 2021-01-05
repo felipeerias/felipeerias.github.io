@@ -17,7 +17,7 @@ From 2007 to 2014, I worked at [Igalia](http://www.igalia.com/), an expert consu
 
 I hold a 5-year degree in SW Engineering at the University of Coruña (Spain, 2006). This was later complemented with a Master in Human-Computer Interaction at the University of York (UK, 2010), which provided me with a solid grasp of the cognitive, methodological and theoretical foundations for user-centred design, as well as a Master on Interaction Design at the University of Malmö (Sweden, 2015), which focused on concept development, iterative prototyping, and embodied interaction.
 
-[**Curricum Vitae** (PDF)](/assets/pdf/CV%20Felipe%20Erias%202021.pdf.pdf)
+[**Curricum Vitae** (PDF)](/assets/pdf/CV%20Felipe%20Erias%202021.pdf)
 
 ## Education
 
