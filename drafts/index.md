@@ -12,6 +12,8 @@ This blog post is based on my talk at BlinkOn 14 (May 2021). You can watch the r
 
 {% include youtubePlayer.html id=eHZVuHKWdd8 %}
 
+{% include vimeoPlayer.html id=488410833 %}
+
 > [Towards richer colors in Blink (BlinkOn 14)](https://www.youtube.com/watch?v=eHZVuHKWdd8)
 
 And the slides are available here: [Towards richer colors in Blink - slides)](https://docs.google.com/presentation/d/1u_pPs6uq3nQUvBEPmBz_cJsFepfZi07Y3RbY62_i-FU/edit?usp=sharing).
