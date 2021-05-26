@@ -11,8 +11,6 @@ The study of color joins together concepts from physics (how light works), biolo
 This blog post is based on my talk at BlinkOn 14 (May 2021). You can watch the recording here:
 
 {% include youtubePlayer.html id="eHZVuHKWdd8" %}
-test
-{% include vimeoPlayer.html id="488410833" %}
 
 > [Towards richer colors in Blink (BlinkOn 14)](https://www.youtube.com/watch?v=eHZVuHKWdd8)
 
