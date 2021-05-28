@@ -85,14 +85,19 @@ p.indented {
   color: rgba(0, 0, 0, 0.87);
 }
 
-.main-content .embed-responsive-item {
-    width: 100%;
-    aspect-ratio: 16 / 9;
+.main-content .embed-container {
+  position:relative;
+  padding-top:56.25%;
+  height: 0;
+  overflow: hidden;
 }
 
 .main-content .embed-responsive-item {
-    width: 100%;
-    height: 100%;
+  position:absolute;
+  top:0;
+  left:0;
+  width: 100%;
+  height: 100%;
 }
 
 /* HEADER */
