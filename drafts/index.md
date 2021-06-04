@@ -35,7 +35,7 @@ Traditionally, colors in the Web are specified in the sRGB color space with a va
 
 {% include 3colors.html color1="#40E0D0" text1="#40E0D0" color2="rgb(218, 112, 214)" text2="rgb(218, 112, 214)" color3="PeachPuff" text3="PeachPuff" %}
 
-{% include 3colors.html color1="rgba(255, 265, 0, 0.8)" text1="rgba(255, 265, 0, 0.8)" color2="hsl(177, 70%, 41%)" text2="hsl(177, 70%, 41%)" color3="LightSkyBlue" text3="LightSkyBlue" %}
+{% include 3colors.html color1="rgba(211, 65, 0, .8)" text1="rgba(211, 65, 0, .8)" color2="hsl(177, 70%, 41%)" text2="hsl(177, 70%, 41%)" color3="LightSkyBlue" text3="LightSkyBlue" %}
 
 > [Color CSS data type](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value)
 
@@ -154,21 +154,19 @@ This means that sRGB (and HSL) can not be used to accurately predictable adjust 
 One of the new functionalities in the CSS Color spec is to be able to use color spaces where the same numerical changes in one of the values brings similar perceived changes, like the LCH color space (Lightness, Chroma, Hue).
 
 
-![lch examples](/assets/img/lch_examples.png "LCH examples")
+{% include 3colors.html color1="rgb(63.81% 33.07% 3.22%)" text1="LCH(45% 60 60)" color2="rgb(81.27% 47.93% 19.86%)" text2="LCH(60% 60 60)" color3="rgb(99.14% 63.48% 34.71%)" text3="LCH(75% 60 60)" %}
 
 
-{% include 3colors.html color1="rgb(63.81% 33.07% 3.22%)" text1="LCH(45, 60, 60)" color2="rgb(81.27% 47.93% 19.86%)" text2="LCH(60, 60, 60)" color3="rgb(99.14% 63.48% 34.71%)" text3="LCH(75, 60, 60)" %}
-
-{% include 3colors.html color1="rgb(99.14% 63.48% 34.71%)" text1="LCH(50, 10, 319)" color2="rgb(65.55% 33.99% 73.44%)" text2="LCH(50, 60, 319)" color3="rgb(78.37% 0.5% 96.29%)" text3="LCH(50, 60, 319)" %}
-
-{% include 3colors.html color1="rgb(82.52% 25.47% 21.48%)" text1="LCH(50, 70, 35)" color2="rgb(3.02% 54.29% 4.57%)" text2="LCH(50, 70, 135)" color3="rgb(16.94% 45.77% 93.42%)" text3="LCH(50, 70, 280)" %}
+{% include 3colors.html color1="rgb(99.14% 63.48% 34.71%)" text1="LCH(50% 10 319)" color2="rgb(65.55% 33.99% 73.44%)" text2="LCH(50% 60 319)" color3="rgb(78.37% 0.5% 96.29%)" text3="LCH(50% 60 319)" %}
 
 
+{% include 3colors.html color1="rgb(82.52% 25.47% 21.48%)" text1="LCH(50% 70 35)" color2="rgb(3.02% 54.29% 4.57%)" text2="LCH(50% 70 135)" color3="rgb(16.94% 45.77% 93.42%)" text3="LCH(50% 70 280)" %}
 
 
 > [LCH colour picker](https://css.land/lch)
 
-> [CIE LAB color space](https://en.wikipedia.org/wiki/CIELAB_color_space)
+> [CIE LAB color space](https://en.wikipedia.org/wiki/
+CIELAB_color_space)
 
 > [Perceptually uniform color spaces](https://programmingdesignsystems.com/color/perceptually-uniform-color-spaces)
 
