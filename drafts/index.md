@@ -6,7 +6,7 @@ date: 2021-05-17
 
 ## Introduction
 
-The study of color joins together concepts from physics (how light works), biology (how our eyes see), computing, and more. There is a long and rich history following the desire to be able to manipulate richer materials and colors when creating visual art, and the same is true of the Web today.
+The study of color brings together ideas from physics (how light works), biology (how our eyes see), computing, and more. There is a long and rich history following the desire to be able to use richer materials and colors when creating visual art, and the same is true of the Web today.
 
 This blog post is based on my talk at BlinkOn 14 (May 2021). You can watch the recording here:
 
@@ -16,54 +16,48 @@ This blog post is based on my talk at BlinkOn 14 (May 2021). You can watch the r
 
 And the slides are available here: [Towards richer colors in Blink - slides)](https://docs.google.com/presentation/d/1u_pPs6uq3nQUvBEPmBz_cJsFepfZi07Y3RbY62_i-FU/edit?usp=sharing).
 
-This post will talk about the ongoing efforts to specify richer colors on the Web platform, with a focus on how Blink/Chromium paints colors and some ideas about what it would take to widen the range of colors that it is able to paint.
+This post will talk about the ongoing efforts to specify richer colors on the Web platform, with special focus on how Blink/Chromium paints colors and some ideas about directions for future development.
 
 
 ## Color on the Web
 
-A color space is a way to describe and organize colors so they can be identified and reproduced with accuracy. Some color spaces are more or less arbitrary (e.g. the Pantone collection) but the ones that we will focus on are based on mathematical descriptions.
+A *color space* is a way to describe and organize colors so they can be identified and reproduced with accuracy. Some color spaces are more or less arbitrary (e.g. the [Pantone collection](https://en.wikipedia.org/wiki/Pantone#Pantone_Color_Matching_System)) but the ones that we will focus on are based on detailed mathematical descriptions.
 
-These color spaces consist of a mathematical color model that specifies how colors are described (i.e. tuples of numbers) and a precise description of how those components are to be interpreted.
+These color spaces consist of a mathematical color model that specifies how colors are described (i.e. as tuples of numbers) and a precise description of how those components are to be interpreted.
 
-Until recently, the Web has been built on top of the sRGB color space (1996) which describes colors with a RGB color model (red, green and blue) plus a non-linear transfer function to link the numerical value for each component with the intensity of the corresponding primary.
+Until recently, the Web has been built on top of the [sRGB](https://en.wikipedia.org/wiki/SRGB) color space (1996) which describes colors with a [RGB color model](https://en.wikipedia.org/wiki/RGB_color_model) (red, green and blue) plus a non-linear transfer function to link the numerical value for each component with the intensity of the corresponding primary color.
 
-Traditionally, colors in the Web are specified in the sRGB color space with a value between 0 and 255 for each component plus an opacity value. CSS includes plenty of functions and shortcuts to define a color in that sRGB space.
-
+Traditionally, colors in the Web are specified in the sRGB color space with a value between 0 and 255 for each component plus an opacity value. CSS includes plenty of functions and shortcuts to define a color in that sRGB space. For example:
 
 {% include 3colors.html color1="#40E0D0" text1="#40E0D0" color2="rgb(218, 112, 214)" text2="rgb(218, 112, 214)" color3="PeachPuff" text3="PeachPuff" %}
 
 {% include 3colors.html color1="rgba(211, 65, 0, .8)" text1="rgba(211, 65, 0, .8)" color2="hsl(177, 70%, 41%)" text2="hsl(177, 70%, 41%)" color3="LightSkyBlue" text3="LightSkyBlue" %}
 
-> [Color CSS data type](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value)
+> See also: [Color CSS data type](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value)
 
-There are many other color spaces. The one of the left is called CIE XYZ and was specifically designed to cover all colors the average human can see.
-
-From that large map of colors within human perception, the graph on the right identifies those that fall within the sRGB color space.
-
-As you can see, there are many colors that we can perceive but fall outside of sRGB. They can not be described within sRGB.
-
+There are many other color spaces. The graphs below are a representation of the colors that can be representd in a given color space. The one on the left corresponds to [CIE XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space), which was specifically designed to cover all colors that an average human can see.
 
 ![home tab](/assets/img/ciexyz_srgb.png "CIE XYZ and sRGB")
 
+From that large map of colors within human perception, the graph on the right identifies those that fall within the sRGB color space.
 
-> [Color: From Hexcodes to Eyeballs](http://jamie-wong.com/post/color/) (Jamie Wong)
+As you can see, there are many colors that we can perceive but fall outside of sRGB. They can not be described by sRGB!
 
-> [CIE 1931 color space](https://en.wikipedia.org/wiki/CIE_1931_color_space) (Wikipedia)
 
-> [sRGB](https://en.wikipedia.org/wiki/SRGB) (Wikipedia)
+> Learn more: [Color: From Hexcodes to Eyeballs](http://jamie-wong.com/post/color/) (Jamie Wong)
 
-The range of colors that a hardware display is able to show is called its gamut. The sRGB color space gained popularity early on because it was well suited to be displayed by the CRT devices monitors that were common at the time. As technology has improved over time, many displays nowadays are able to display colors that go beyond the sRGB color space.
 
-On the Web platform in particular there is increasing interest for adding support for wider color gamuts to different elements. These articles are a good introduction:
+The range of colors that a hardware display is able to show is called its *gamut*. The sRGB color space gained popularity early on because it was well suited to be displayed by the CRT monitors that were common at the time. As technology has improved over time, many devices nowadays are able to display colors that go beyond the sRGB color space.
 
-* [Unlocking Colors](https://bkardell.com/blog/Unlocking-Colors.html) (Brian Kardell)
-* [LCH colors in CSS: what, why, and how?](https://lea.verou.me/2020/04/lch-colors-in-css-what-why-and-how/) (Lea Verou)
+On the Web platform in particular there is increasing interest for adding support for wider color gamuts to different elements
 
-Several JavaScript libraries already provide a lot of functionality for manipulating colors (but are limited by the limits of what can be displayed by the browser):
+> Learn more:
+> [Unlocking Colors](https://bkardell.com/blog/Unlocking-Colors.html) (Brian Kardell)
+> [LCH colors in CSS: what, why, and how?](https://lea.verou.me/2020/04/lch-colors-in-css-what-why-and-how/) (Lea Verou)
 
-* [Color JS](https://colorjs.io/)
-* [D3 d3-interpolate](https://github.com/d3/d3-interpolate#color-spaces)
-* [chroma JS](https://gka.github.io/chroma.js/)
+Several JavaScript libraries already provide a lot of functionality for manipulating colors (but are limited by the limits of what can be displayed by the browser).
+
+> See: [Color JS](https://colorjs.io/), [D3 d3-interpolate](https://github.com/d3/d3-interpolate#color-spaces), [chroma JS](https://gka.github.io/chroma.js/).
 
 The major Web browsers offer different levels of support for color management and access to wider gamuts.
 
@@ -71,24 +65,23 @@ The major Web browsers offer different levels of support for color management an
 ### Color standards in the Web
 
 
-This post will focus specifically on adding support on [Blink](https://www.chromium.org/blink) and [Chromium](https://www.chromium.org/Home) for richer colors in elements defined in HTML and CSS. The reference specification for this is the CSS Color Module elaborated by the CSS Working Group:
+This post will focus specifically on adding support on [Blink](https://www.chromium.org/blink) and [Chromium](https://www.chromium.org/Home) for richer colors in elements defined in HTML and CSS.
 
-* current: [CSS Color Module level 4](https://drafts.csswg.org/css-color)
-* next iteration: [CSS Color Module level 5](http://drafts.csswg.org/css-color-5)
+The reference specification for this is the CSS Color Module elaborated by the CSS Working Group. [CSS Color Module 4](https://drafts.csswg.org/css-color) describes most of the changes discussed here and [CSS Color Module 5](http://drafts.csswg.org/css-color-5) extends the former with additional color modification functionality.
 
 There is as well a [Color on the Web](https://www.w3.org/community/colorweb/) community group at the W3C that among other things organises a [workshop on wide color gamut for the Web](https://www.w3.org/Graphics/Color/Workshop/overview.html).
 
-There was also [a very interesting discussion](https://github.com/w3ctag/design-reviews/issues/488) at the W3C's Technical Architecture Group about how having colors outside of the sRGB gamut opened up questions about interoperability between the different elements of the platform.
+Last year there was also a very interesting [discussion at the W3C's Technical Architecture Group](https://github.com/w3ctag/design-reviews/issues/488) about how having colors outside of the sRGB gamut opened up questions about interoperability between the different elements of the platform.
 
-(This list does not pretend to be exhaustive and it intentionally leaves aside the many groups working on standards beyond CSS and beyond the Web in general.)
+(Note: this list does not pretend to be exhaustive and it intentionally leaves aside the many groups working on standards beyond CSS and beyond the Web in general.)
 
 ###  CSS Color
 
 The CSS Color spec, among other things:
 
-* extends the color() function to let the author explicitly indicate the desired colorspace of a color, including color spaces with a wide gamut.
-* defines the lab() and lch() functions to specify colors in [the CIE L*A*B colorspace](https://en.wikipedia.org/wiki/CIELAB_color_space).
-* provides detailed control over how interpolation happens, as well as many other features.
+* extends the color() function to let the author explicitly indicate the desired color space of a color, including those with a wide gamut;
+* defines the lab() and lch() functions to specify colors in [the CIE L*A*B colorspace](https://en.wikipedia.org/wiki/CIELAB_color_space);
+* provides detailed control over how interpolation happens, as well as many other features;
 * contains a reference implementation for the operations described in it.
 
 So why is this a big deal?
@@ -96,16 +89,18 @@ So why is this a big deal?
 
 ### Display more colors
 
+First, using only sRGB limits the range of colors that can be displayed. Many modern monitors have a wider gamut than sRGB, often close to another standard called [Display-P3](https://en.wikipedia.org/wiki/DCI-P3).
 
-First, using only sRGB limits the range of colors that can be displayed. Many modern monitors have a wider gamut than sRGB, often close to another standard called Display-P3. Here you can see both of those spaces over the same graph that we saw before:
+Here you can see both of those spaces over the same graph that we saw before:
 
 
 ![srgb p3](/assets/img/dpcip3-20190103-5.jpg "Display-P3 and sRGB")
 
-> [Why DCI-P3 is the New Standard of Color Gamut?](https://www.msi.com/blog/why-dci-p3-is-the-new-standard-of-color-gamut)
-> [Wide-gamut color on the web](https://www.reddit.com/r/webdev/comments/ctiixa/widegamut_color_on_the_web_the_status_in_august)
-
 The Display-P3 space is about one third larger than sRGB. This means that from CSS we have no access to roughly one third of the colors that modern monitors can display.
+
+> Learn more: [Why DCI-P3 is the New Standard of Color Gamut?](https://www.msi.com/blog/why-dci-p3-is-the-new-standard-of-color-gamut)
+> 
+> See also: [Wide-gamut color on the web](https://www.reddit.com/r/webdev/comments/ctiixa/widegamut_color_on_the_web_the_status_in_august)
 
 This is another way of visualizing the same thing, where the white line in each case represents the boundary between what can be described within sRGB and what is inside Display-P3.
 
@@ -113,9 +108,9 @@ This is another way of visualizing the same thing, where the white line in each 
 ![srgb p3 outline](/assets/img/sRGB_P3_outline.png "Display-P3 and sRGB")
 
 
-> [Wide Gamut Color in CSS with Display-P3](https://webkit.org/blog/10042/wide-gamut-color-in-css-with-display-p3/) (WebKit)
-
 As you can see, the colors that fall within the Display-P3 space but outside of sRGB are the most intense and vivid.
+
+> Learn more: [Wide Gamut Color in CSS with Display-P3](https://webkit.org/blog/10042/wide-gamut-color-in-css-with-display-p3/) (WebKit)
 
 And that is not all, there are color spaces that are even larger than Display-P3 which are for now only used for professional equipment but which, at some point in the future, will probably become popular in their turn.
 
@@ -127,43 +122,51 @@ Adding wider color spaces to the Web is as much about supporting what hardware c
 
 Secondly, another limitation of sRGB in the Web is that it is not perceptually uniform: the same numeric amount of change in a value does not cause similar changes in the colors that we perceive.
 
-We can see this clearly with HLS, which is an alternate way to express the same sRGB colors in terms of hue, lightness and saturation.
+We can see this clearly with HLS, which is an alternate way to express the same sRGB colors in terms of hue, saturation, and lightness. Let's see some examples.
+
+Here 20 degrees in hue are the difference between orange and yellow:
 
 {% include 2colors.html color1="HSL(30, 100%, 50%)" text1="HSL(30, 100%, 50%)" color2="HSL(50, 100%, 50%)" text2="HSL(50, 100%, 50%)" %}
 
+Whereas here that same step produces very similar blues:
+
 {% include 2colors.html color1="HSL(230, 100%, 50%)" text1="HSL(230, 100%, 50%)" color2="HSL(250, 100%, 50%)" text2="HSL(250, 100%, 50%)" %}
+
+Changing the lightness value may also change the saturation that we perceive (even when its numberical value stays the same).
 
 {% include 2colors.html color1="HSL(0, 90%, 40%)" text1="HSL(0, 90%, 40%)" color2="HSL(0, 90%, 80%)" text2="HSL(0, 90%, 80%)" %}
 
+And colors with the same saturation and lightness values can be perceived very differently because of their hue:
+
 {% include 2colors.html color1="HSL(250, 100%, 50%)" text1="HSL(250, 100%, 50%)" color2="HSL(60, 100%, 50%)" text2="HSL(60, 100%, 50%)" %}
 
+> Learn more: [Color spaces for human beings](https://www.boronine.com/2012/03/26/Color-Spaces-for-Human-Beings/)
 
-> [Color spaces for human beings](https://www.boronine.com/2012/03/26/Color-Spaces-for-Human-Beings/)
+This means that in general sRGB (and by extension HSL) can not be used to accurately adjust lightness, saturation or hue, to find complementary colors, to calculate the perceived contrast between two colors, etc.
 
-In the first example, a change of 20 degres in hue does not always cause a similar change in the color that we perceive. In the second, changing the lightness also changes the saturation that we perceive even if its numberical value has stayed the same. And in the third, colors with the same lightness value can have very different perceived lightness.
+One of the new functionalities in the CSS Color spec is to be able to use color spaces where the same numerical changes in one of the values brings similar perceived changes, like the [LCH color space](https://en.wikipedia.org/wiki/CIELAB_color_space#Cylindrical_model).
 
-This means that sRGB (and HSL) can not be used to accurately predictable adjust lightness, saturation or hue, find complementary colors, calculate the perceived contrast between two colors, etc.
+LCH is based on the [CIE LAB color space](https://en.wikipedia.org/wiki/CIELAB_color_space) and defines colors according to their Lightness, Chroma, and Hue.
 
-One of the new functionalities in the CSS Color spec is to be able to use color spaces where the same numerical changes in one of the values brings similar perceived changes, like the LCH color space (Lightness, Chroma, Hue).
+In the LCH color space, the same numerical changes in a value bring about similar and predictable changes in the colors that we perceive without affecting the other characteristics.
 
+Changes in lightness:
 
 {% include 3colors.html color1="rgb(63.81% 33.07% 3.22%)" text1="LCH(45% 60 60)" color2="rgb(81.27% 47.93% 19.86%)" text2="LCH(60% 60 60)" color3="rgb(99.14% 63.48% 34.71%)" text3="LCH(75% 60 60)" %}
 
+Changes in chroma (or "amount of color"):
 
 {% include 3colors.html color1="rgb(99.14% 63.48% 34.71%)" text1="LCH(50% 10 319)" color2="rgb(65.55% 33.99% 73.44%)" text2="LCH(50% 60 319)" color3="rgb(78.37% 0.5% 96.29%)" text3="LCH(50% 60 319)" %}
 
+Changes in hue:
 
 {% include 3colors.html color1="rgb(82.52% 25.47% 21.48%)" text1="LCH(50% 70 35)" color2="rgb(3.02% 54.29% 4.57%)" text2="LCH(50% 70 135)" color3="rgb(16.94% 45.77% 93.42%)" text3="LCH(50% 70 280)" %}
 
 
-> [LCH colour picker](https://css.land/lch)
+> Learn more: [LCH colour picker](https://css.land/lch)
+> 
+> See also: [Perceptually uniform color spaces](https://programmingdesignsystems.com/color/perceptually-uniform-color-spaces)
 
-> [CIE LAB color space](https://en.wikipedia.org/wiki/
-CIELAB_color_space)
-
-> [Perceptually uniform color spaces](https://programmingdesignsystems.com/color/perceptually-uniform-color-spaces)
-
-In the LCH color space, the same changes in lightness (first row), chroma ("amount of color", second row), and hue bring about similar and predictable changes in the colors that we perceive.
 
 
 ### Interpolation, etc.
