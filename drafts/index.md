@@ -56,6 +56,7 @@ On the Web platform in particular there is increasing interest for adding suppor
 
 > Learn more:
 > [Unlocking Colors](https://bkardell.com/blog/Unlocking-Colors.html) (Brian Kardell)
+> 
 > [LCH colors in CSS: what, why, and how?](https://lea.verou.me/2020/04/lch-colors-in-css-what-why-and-how/) (Lea Verou)
 
 Several JavaScript libraries already provide a lot of functionality for manipulating colors (but are limited by the limits of what can be displayed by the browser).
