@@ -32,7 +32,12 @@ Traditionally, colors in the Web are specified in the sRGB color space with a va
 
 ![web srgb](/assets/img/web_srgb.png "sRGB in the Web")
 
-> [<color> CSS data type](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value)
+
+{% include 3colors.html color1="#40E0D0" text1="#40E0D0" color2="rgb(218, 112, 214)" text2="rgb(218, 112, 214)" color3="PeachPuff" text3="PeachPuff" %}
+
+{% include 3colors.html color1="rgba(255, 265, 0, 0.8)" text1="rgba(255, 265, 0, 0.8)" color2="hsl(177, 70%, 41%)" text2="hsl(177, 70%, 41%)" color3="LightSkyBlue" text3="LightSkyBlue" %}
+
+> [Color CSS data type](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value)
 
 There are many other color spaces. The one of the left is called CIE XYZ and was specifically designed to cover all colors the average human can see.
 
@@ -136,7 +141,6 @@ We can see this clearly with HLS, which is an alternate way to express the same 
 {% include 2colors.html color1="HSL(230, 100%, 50%)" text1="HSL(230, 100%, 50%)" color2="HSL(250, 100%, 50%)" text2="HSL(250, 100%, 50%)" %}
 
 {% include 2colors.html color1="HSL(0, 90%, 40%)" text1="HSL(0, 90%, 40%)" color2="HSL(0, 90%, 80%)" text2="HSL(0, 90%, 80%)" %}
-
 
 {% include 2colors.html color1="HSL(250, 100%, 50%)" text1="HSL(250, 100%, 50%)" color2="HSL(60, 100%, 50%)" text2="HSL(60, 100%, 50%)" %}
 
