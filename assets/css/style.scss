@@ -103,22 +103,27 @@ p.indented {
 /* COLOR INCLUDES */
 
 .colors-container {
-	width: 100%;
-	display: grid;
+  width: 100%;
+  display: grid;
 }
 
 .colors-2 {
-	grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
 }
 
 .colors-3 {
-	grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
-.colors-container span {
-	font-family: monospace, sans;
-	color: black;
-	background: rgba(255, 255, 255, 0.8);
+.color-element {
+	height: 7.5rem;
+}
+
+.color-element span {
+  font-family: monospace, sans;
+  color: black;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.5rem;
 }
 
 /* HEADER */
