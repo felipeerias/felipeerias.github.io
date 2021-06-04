@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Towards richer colors in Blink
-date: 2021-06-01
+date: 2021-05-17
 ---
 
 ## Introduction
@@ -10,7 +10,7 @@ The study of color joins together concepts from physics (how light works), biolo
 
 This blog post is based on my talk at BlinkOn 14 (May 2021). You can watch the recording here:
 
-{% include youtubePlayer.html id="eHZVuHKWdd8" %}
+{% include youtubePlayer.html id=eHZVuHKWdd8 %}
 
 > [Towards richer colors in Blink (BlinkOn 14)](https://www.youtube.com/watch?v=eHZVuHKWdd8)
 
@@ -129,6 +129,16 @@ We can see this clearly with HLS, which is an alternate way to express the same 
 
 
 ![hsl problems](/assets/img/hsl_problems.png "HSL problems")
+
+
+{% include 2colors.html color1="HSL(30, 100%, 50%)" text1="HSL(30, 100%, 50%)" color2="HSL(50, 100%, 50%)" text2="HSL(50, 100%, 50%)" %}
+
+{% include 2colors.html color1="HSL(230, 100%, 50%)" text1="HSL(230, 100%, 50%)" color2="HSL(250, 100%, 50%)" text2="HSL(250, 100%, 50%)" %}
+
+{% include 2colors.html color1="HSL(0, 90%, 40%)" text1="HSL(0, 90%, 40%)" color2="HSL(0, 90%, 80%)" text2="HSL(0, 90%, 80%)" %}
+
+
+{% include 2colors.html color1="HSL(250, 100%, 50%)" text1="HSL(250, 100%, 50%)" color2="HSL(60, 100%, 50%)" text2="HSL(60, 100%, 50%)" %}
 
 
 > [Color spaces for human beings](https://www.boronine.com/2012/03/26/Color-Spaces-for-Human-Beings/)
