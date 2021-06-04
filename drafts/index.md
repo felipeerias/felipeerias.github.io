@@ -30,9 +30,6 @@ Until recently, the Web has been built on top of the sRGB color space (1996) whi
 Traditionally, colors in the Web are specified in the sRGB color space with a value between 0 and 255 for each component plus an opacity value. CSS includes plenty of functions and shortcuts to define a color in that sRGB space.
 
 
-![web srgb](/assets/img/web_srgb.png "sRGB in the Web")
-
-
 {% include 3colors.html color1="#40E0D0" text1="#40E0D0" color2="rgb(218, 112, 214)" text2="rgb(218, 112, 214)" color3="PeachPuff" text3="PeachPuff" %}
 
 {% include 3colors.html color1="rgba(211, 65, 0, .8)" text1="rgba(211, 65, 0, .8)" color2="hsl(177, 70%, 41%)" text2="hsl(177, 70%, 41%)" color3="LightSkyBlue" text3="LightSkyBlue" %}
@@ -131,10 +128,6 @@ Adding wider color spaces to the Web is as much about supporting what hardware c
 Secondly, another limitation of sRGB in the Web is that it is not perceptually uniform: the same numeric amount of change in a value does not cause similar changes in the colors that we perceive.
 
 We can see this clearly with HLS, which is an alternate way to express the same sRGB colors in terms of hue, lightness and saturation.
-
-
-![hsl problems](/assets/img/hsl_problems.png "HSL problems")
-
 
 {% include 2colors.html color1="HSL(30, 100%, 50%)" text1="HSL(30, 100%, 50%)" color2="HSL(50, 100%, 50%)" text2="HSL(50, 100%, 50%)" %}
 
