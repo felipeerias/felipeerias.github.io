@@ -156,6 +156,16 @@ One of the new functionalities in the CSS Color spec is to be able to use color 
 
 ![lch examples](/assets/img/lch_examples.png "LCH examples")
 
+
+{% include 3colors.html color1="rgb(63.81% 33.07% 3.22%)" text1="LCH(45, 60, 60)" color2="rgb(81.27% 47.93% 19.86%)" text2="LCH(60, 60, 60)" color3="rgb(99.14% 63.48% 34.71%)" text3="LCH(75, 60, 60)" %}
+
+{% include 3colors.html color1="rgb(99.14% 63.48% 34.71%)" text1="LCH(50, 10, 319)" color2="rgb(65.55% 33.99% 73.44%)" text2="LCH(50, 60, 319)" color3="rgb(78.37% 0.5% 96.29%)" text3="LCH(50, 60, 319)" %}
+
+{% include 3colors.html color1="rgb(82.52% 25.47% 21.48%)" text1="LCH(50, 70, 35)" color2="rgb(3.02% 54.29% 4.57%)" text2="LCH(50, 70, 135)" color3="rgb(16.94% 45.77% 93.42%)" text3="LCH(50, 70, 280)" %}
+
+
+
+
 > [LCH colour picker](https://css.land/lch)
 
 > [CIE LAB color space](https://en.wikipedia.org/wiki/CIELAB_color_space)
