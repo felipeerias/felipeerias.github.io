@@ -19,7 +19,7 @@ And the slides are available here: [Towards richer colors in Blink - slides)](ht
 This post will talk about the ongoing efforts to specify richer colors on the Web platform, with special focus on how Blink/Chromium paints colors and some ideas about directions for future development.
 
 
-## Color on the Web
+## Color spaces
 
 A *color space* is a way to describe and organize colors so they can be identified and reproduced with accuracy. Some color spaces are more or less arbitrary (e.g. the [Pantone collection](https://en.wikipedia.org/wiki/Pantone#Pantone_Color_Matching_System)) but the ones that we will focus on are based on detailed mathematical descriptions.
 
@@ -49,6 +49,9 @@ As you can see, there are many colors that we can perceive but fall outside of s
 
 The range of colors that a hardware display is able to show is called its *gamut*. The sRGB color space gained popularity early on because it was well suited to be displayed by the CRT monitors that were common at the time. As technology has improved over time, many devices nowadays are able to display colors that go beyond the sRGB color space.
 
+
+## Colors on the Web
+
 On the Web platform in particular there is increasing interest for adding support for wider color gamuts to different elements
 
 > Learn more:
@@ -61,21 +64,18 @@ Several JavaScript libraries already provide a lot of functionality for manipula
 
 The major Web browsers offer different levels of support for color management and access to wider gamuts.
 
-
-### Color standards in the Web
-
-
 This post will focus specifically on adding support on [Blink](https://www.chromium.org/blink) and [Chromium](https://www.chromium.org/Home) for richer colors in elements defined in HTML and CSS.
 
-The reference specification for this is the CSS Color Module elaborated by the CSS Working Group. [CSS Color Module 4](https://drafts.csswg.org/css-color) describes most of the changes discussed here and [CSS Color Module 5](http://drafts.csswg.org/css-color-5) extends the former with additional color modification functionality.
+
+### CSS Color
+
+The reference specification for richer colors on the Web is the CSS Color Module elaborated by the CSS Working Group. [CSS Color Module 4](https://drafts.csswg.org/css-color) describes most of the changes discussed here and [CSS Color Module 5](http://drafts.csswg.org/css-color-5) brings additional color modification functionality.
 
 There is as well a [Color on the Web](https://www.w3.org/community/colorweb/) community group at the W3C that among other things organises a [workshop on wide color gamut for the Web](https://www.w3.org/Graphics/Color/Workshop/overview.html).
 
 Last year there was also a very interesting [discussion at the W3C's Technical Architecture Group](https://github.com/w3ctag/design-reviews/issues/488) about how having colors outside of the sRGB gamut opened up questions about interoperability between the different elements of the platform.
 
 (Note: this list does not pretend to be exhaustive and it intentionally leaves aside the many groups working on standards beyond CSS and beyond the Web in general.)
-
-###  CSS Color
 
 The CSS Color spec, among other things:
 
@@ -87,7 +87,7 @@ The CSS Color spec, among other things:
 So why is this a big deal?
 
 
-### Display more colors
+#### Display more colors
 
 First, using only sRGB limits the range of colors that can be displayed. Many modern monitors have a wider gamut than sRGB, often close to another standard called [Display-P3](https://en.wikipedia.org/wiki/DCI-P3).
 
@@ -117,7 +117,7 @@ And that is not all, there are color spaces that are even larger than Display-P3
 Adding wider color spaces to the Web is as much about supporting what hardware can do today as it is about setting us in the path to support what it will do in the future.
 
 
-### Define colors in a consistent and predictable way
+#### Define colors in a consistent and predictable way
 
 
 Secondly, another limitation of sRGB in the Web is that it is not perceptually uniform: the same numeric amount of change in a value does not cause similar changes in the colors that we perceive.
@@ -132,7 +132,7 @@ Whereas here that same step produces very similar blues:
 
 {% include 2colors.html color1="HSL(230, 100%, 50%)" text1="HSL(230, 100%, 50%)" color2="HSL(250, 100%, 50%)" text2="HSL(250, 100%, 50%)" %}
 
-Changing the lightness value may also change the saturation that we perceive (even when its numberical value stays the same).
+Changing the lightness value may also change the saturation that we perceive (even when its numerical value stays the same).
 
 {% include 2colors.html color1="HSL(0, 90%, 40%)" text1="HSL(0, 90%, 40%)" color2="HSL(0, 90%, 80%)" text2="HSL(0, 90%, 80%)" %}
 
@@ -169,7 +169,7 @@ Changes in hue:
 
 
 
-### Interpolation, etc.
+#### Interpolation, etc.
 
 
 Supporting additional color spaces will let you specify different ways to interpolate between colors in gradients and transitions.
