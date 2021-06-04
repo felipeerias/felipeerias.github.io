@@ -100,6 +100,27 @@ p.indented {
   height: 100%;
 }
 
+/* COLOR INCLUDES */
+
+.colors-container {
+	width: 100%;
+	display: grid;
+}
+
+.2colors {
+	grid-template-columns: 1fr 1fr;
+}
+
+.3colors {
+	grid-template-columns: 1fr 1fr 1fr;
+}
+
+.colors-container span {
+	font-family: monospace, sans;
+	color: black;
+	background: rgba(255, 255, 255, 0.8);
+}
+
 /* HEADER */
 
 .page-header {
