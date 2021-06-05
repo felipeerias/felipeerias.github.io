@@ -4,6 +4,21 @@ title: Towards richer colors in Blink
 date: 2021-05-17
 ---
 
+- [Introduction](#introduction)
+- [Color spaces](#color-spaces)
+- [Colors on the Web](#colors-on-the-web)
+  * [CSS Color](#css-color)
+    + [Display more colors](#display-more-colors)
+    + [Consistent and predictable colors](#consistent-and-predictable-colors)
+    + [Interpolation, etc.](#interpolation--etc)
+- [Color in Chromium](#color-in-chromium)
+  * [Render pipeline](#render-pipeline)
+  * [Richer colors](#richer-colors)
+  * [Some ideas from WebKit](#some-ideas-from-webkit)
+  * [High precision colors in Skia](#high-precision-colors-in-skia)
+  * [Summary](#summary)
+- [In Closing](#in-closing)
+
 ## Introduction
 
 The study of color brings together ideas from physics (how light works), biology (how our eyes see), computing, and more. There is a long and rich history following the desire to be able to use richer materials and colors when creating visual art, and the same is true of the Web today.
@@ -14,9 +29,9 @@ This blog post is based on my talk at BlinkOn 14 (May 2021). You can watch the r
 
 > [Towards richer colors in Blink (BlinkOn 14)](https://www.youtube.com/watch?v=eHZVuHKWdd8)
 
-And the slides are available here: [Towards richer colors in Blink - slides)](https://docs.google.com/presentation/d/1u_pPs6uq3nQUvBEPmBz_cJsFepfZi07Y3RbY62_i-FU/edit?usp=sharing).
+And the slides are available here: [Towards richer colors in Blink - slides](https://docs.google.com/presentation/d/1u_pPs6uq3nQUvBEPmBz_cJsFepfZi07Y3RbY62_i-FU/edit?usp=sharing).
 
-This post will talk about the ongoing efforts to specify richer colors on the Web platform, with special focus on how Blink/Chromium paints colors and some ideas about directions for future development.
+This article will talk about the ongoing efforts to specify richer colors on the Web platform, plus some ideas about directions for future development on Blink/Chromium.
 
 
 ## Color spaces
@@ -55,9 +70,7 @@ The range of colors that a hardware display is able to show is called its *gamut
 On the Web platform in particular there is increasing interest for adding support for wider color gamuts to different elements
 
 > Learn more:
-> [Unlocking Colors](https://bkardell.com/blog/Unlocking-Colors.html) (Brian Kardell)
-> 
-> [LCH colors in CSS: what, why, and how?](https://lea.verou.me/2020/04/lch-colors-in-css-what-why-and-how/) (Lea Verou)
+> [Unlocking Colors](https://bkardell.com/blog/Unlocking-Colors.html) (Brian Kardell), [LCH colors in CSS: what, why, and how?](https://lea.verou.me/2020/04/lch-colors-in-css-what-why-and-how/) (Lea Verou)
 
 Several JavaScript libraries already provide a lot of functionality for manipulating colors (but are limited by the limits of what can be displayed by the browser).
 
@@ -118,7 +131,7 @@ And that is not all, there are color spaces that are even larger than Display-P3
 Adding wider color spaces to the Web is as much about supporting what hardware can do today as it is about setting us in the path to support what it will do in the future.
 
 
-#### Define colors in a consistent and predictable way
+#### Consistent and predictable colors
 
 
 Secondly, another limitation of sRGB in the Web is that it is not perceptually uniform: the same numeric amount of change in a value does not cause similar changes in the colors that we perceive.
