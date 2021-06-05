@@ -97,6 +97,10 @@ p.indented {
   color: rgba(0, 0, 0, 0.87);
 }
 
+.main-content li > ul {
+	margin-bottom: 0;
+}
+
 .main-content .embed-container {
   position:relative;
   padding-top:56.25%;
