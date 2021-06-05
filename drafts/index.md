@@ -4,8 +4,8 @@ title: Towards richer colors in Blink
 date: 2021-05-17
 ---
 
+- [Preface](#preface)
 - [Introduction](#introduction)
-- [Color spaces](#color-spaces)
 - [Colors on the Web](#colors-on-the-web)
   * [CSS Color](#css-color)
 - [Color in Chromium](#color-in-chromium)
@@ -16,9 +16,7 @@ date: 2021-05-17
   * [Summary](#summary)
 - [In Closing](#in-closing)
 
-## Introduction
-
-The study of color brings together ideas from physics (how light works), biology (how our eyes see), computing, and more. There is a long and rich history following the desire to be able to use richer materials and colors when creating visual art, and the same is true of the Web today.
+## Preface
 
 This blog post is based on my talk at BlinkOn 14 (May 2021). You can watch the recording here:
 
@@ -31,7 +29,9 @@ And the slides are available here: [Towards richer colors in Blink - slides](htt
 This article will talk about the ongoing efforts to specify richer colors on the Web platform, plus some ideas about directions for future development on Blink/Chromium.
 
 
-## Color spaces
+## Introduction
+
+The study of color brings together ideas from physics (how light works), biology (how our eyes see), computing, and more. There is a long and rich history following the desire to be able to use richer materials and colors when creating visual art, and the same is true of the Web today.
 
 A *color space* is a way to describe and organize colors so they can be identified and reproduced with accuracy. Some color spaces are more or less arbitrary (e.g. the [Pantone collection](https://en.wikipedia.org/wiki/Pantone#Pantone_Color_Matching_System)) but the ones that we will focus on are based on detailed mathematical descriptions.
 
@@ -180,7 +180,7 @@ Changes in hue:
 
 
 
-#### Interpolation, etc.
+#### Interpolation and more
 
 
 Supporting additional color spaces will let you specify different ways to interpolate between colors in gradients and transitions.
