@@ -39,7 +39,9 @@ These color spaces consist of a mathematical color model that specifies how colo
 
 Until recently, the Web has been built on top of the [sRGB](https://en.wikipedia.org/wiki/SRGB) color space (1996) which describes colors with a [RGB color model](https://en.wikipedia.org/wiki/RGB_color_model) (red, green and blue) plus a non-linear transfer function to link the numerical value for each component with the intensity of the corresponding primary color.
 
-Traditionally, colors in the Web are specified in the sRGB color space with a value between 0 and 255 for each component plus an opacity value. CSS includes plenty of functions and shortcuts to define a color in that sRGB space. For example:
+The range of colors that a hardware display is able to show is called its *gamut*. The sRGB color space gained popularity early on because it was well suited to be displayed by the CRT monitors that were common at the time. 
+
+CSS includes plenty of functions and shortcuts to define a color in that sRGB space. For example:
 
 {% include 3colors.html color1="#40E0D0" text1="#40E0D0" color2="rgb(218, 112, 214)" text2="rgb(218, 112, 214)" color3="PeachPuff" text3="PeachPuff" %}
 
@@ -47,24 +49,29 @@ Traditionally, colors in the Web are specified in the sRGB color space with a va
 
 > See also: [Color CSS data type](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value)
 
-There are many other color spaces. The graphs below are a representation of the colors that can be representd in a given color space. The one on the left corresponds to [CIE XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space), which was specifically designed to cover all colors that an average human can see.
+There are many other color spaces. The graph below represent the [chromaticity](https://en.wikipedia.org/wiki/Chromaticity) of the [CIE XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space) color space, which was specifically designed to cover all colors that an average human can see.
 
-![home tab](/assets/img/ciexyz_srgb.png "CIE XYZ and sRGB")
+![CIE](/assets/img/CIExy1931.png "CIE XYZ chromaticity")
 
-From that large map of colors within human perception, the graph on the right identifies those that fall within the sRGB color space.
+> Source: [WikiMedia](https://en.wikipedia.org/wiki/File:CIExy1931.png)
 
-As you can see, there are many colors that we can perceive but fall outside of sRGB. They can not be described by sRGB!
+From that large map of colors within human perception, we can identify those that fall within the sRGB color space.
+
+![CIE_sRGB](/assets/img/SRGB_chromaticity_CIE1931.png "sRGB and CIE XYZ chromaticity")
+
+> Source: [WikiMedia](https://en.wikipedia.org/wiki/File:CIExy1931.png)
+
+As you can see, there are many colors that we can perceive but can not be described by sRGB!
 
 
 > Learn more: [Color: From Hexcodes to Eyeballs](http://jamie-wong.com/post/color/) (Jamie Wong)
 
 
-The range of colors that a hardware display is able to show is called its *gamut*. The sRGB color space gained popularity early on because it was well suited to be displayed by the CRT monitors that were common at the time. As technology has improved over time, many devices nowadays are able to display colors that go beyond the sRGB color space.
 
 
 ## Colors on the Web
 
-On the Web platform in particular there is increasing interest for adding support for wider color gamuts to different elements
+As technology has improved over time, many devices nowadays are able to display colors that go beyond the sRGB color space. On the Web platform there is increasing interest in adding support for wider color gamuts to different elements.
 
 > Learn more:
 > [Unlocking Colors](https://bkardell.com/blog/Unlocking-Colors.html) (Brian Kardell), [LCH colors in CSS: what, why, and how?](https://lea.verou.me/2020/04/lch-colors-in-css-what-why-and-how/) (Lea Verou)
