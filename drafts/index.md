@@ -57,9 +57,9 @@ There are many other color spaces. The graph below represent the [chromaticity](
 
 From that large map of colors within human perception, we can identify those that fall within the sRGB color space.
 
-![CIE_sRGB](/assets/img/SRGB_chromaticity_CIE1931.png "sRGB and CIE XYZ chromaticity")
+![CIE_sRGB](/assets/img/CIExy1931_srgb_gamut.png "sRGB and CIE XYZ chromaticity")
 
-> Source: [WikiMedia](https://en.wikipedia.org/wiki/File:CIExy1931.png)
+> Source: [WikiMedia](https://commons.wikimedia.org/wiki/File:CIExy1931_srgb_gamut.png)
 
 As you can see, there are many colors that we can perceive but can not be described by sRGB!
 
