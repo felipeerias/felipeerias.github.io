@@ -199,7 +199,7 @@ Since color spaces represent and organize colors differently, the path to reach 
 
 > Try it out: [Color JS - interpolation](https://colorjs.io/docs/interpolation.html)
 
-The CSS Color spec more control over interpolation on additional color spaces. This is just one example where adding richer color capabilities to the Web dramatically broadens the range of tools available to authors when creating their sites.
+The CSS Color spec will provide more control over interpolation on additional color spaces. This is just one example where adding richer color capabilities to the Web dramatically broadens the range of tools available to authors when creating their sites.
 
 > Learn more: [Interpolation on CSS Color 4](https://www.w3.org/TR/css-color-4/#interpolation), [Mixing colors on CSS Color 5](https://drafts.csswg.org/css-color-5/#color-mix).
 
