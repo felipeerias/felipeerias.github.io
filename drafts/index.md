@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Towards richer colors in Blink
-date: 2021-05-17
+date: 2021-06-20
 ---
 
 - [Preface](#preface)
