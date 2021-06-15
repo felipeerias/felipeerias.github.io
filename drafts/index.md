@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Towards richer colors in Blink
-date: 2021-06-20
+date: 2021-05-17
 ---
 
 - [Preface](#preface)
@@ -190,20 +190,18 @@ Changes in hue:
 #### Interpolation and more
 
 
-Supporting additional color spaces will let you specify different ways to interpolate between colors in gradients and transitions.
+Since color spaces represent and organize colors differently, the path to reach one color from another is not the same on different spaces. This means that there are many possible ways to interpolate between two colors to create e.g. a gradient. For example:
 
-This happens because the path to get from one color to another is not the same on different color spaces. Here are some examples:
-
-
-![interpolation examples 1](/assets/img/interpolationexamples1.png "Interpolation examples 1")
+![interpolation examples 1](/assets/img/interpolationexamples1.png "Interpolation examples")
 
 
-![interpolation examples 2](/assets/img/interpolationexamples2.png "Interpolation examples 2")
+<!-- ![interpolation examples 2](/assets/img/interpolationexamples2.png "Interpolation examples 2") -->
 
+> Try it out: [Color JS - interpolation](https://colorjs.io/docs/interpolation.html)
 
-> [Color JS - interpolation](https://colorjs.io/docs/interpolation.html)
+The CSS Color spec more control over interpolation on additional color spaces. This is just one example where adding richer color capabilities to the Web dramatically broadens the range of tools available to authors when creating their sites.
 
-Interpolation is just one example where adding richer color capabilities to the Web dramatically broadens the range of tools available to authors when creating their sites.
+> Learn more: [Interpolation on CSS Color 4](https://www.w3.org/TR/css-color-4/#interpolation), [Mixing colors on CSS Color 5](https://drafts.csswg.org/css-color-5/#color-mix).
 
 
 ## Color in Chromium
