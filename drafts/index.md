@@ -287,7 +287,7 @@ Interestingly, Skia does not have the same limits in color precision and range a
 
 Internally, it has a format for high-precision colors that holds four float values, and it is also able to take color spaces into account.
 
-> `SkRGBA4f` and `SkColor4f` in [third_party/skia/include/core/SkColor.h](https://source.chromium.org/chromium/chromium/src/+/master:third_party/skia/include/core/SkColor.h)
+> See: `SkRGBA4f` and `SkColor4f` in `[SkColor.h](https://source.chromium.org/chromium/chromium/src/+/master:third_party/skia/include/core/SkColor.h)`
 
 Much of the Skia API is already able to take as input a colorspace and one or more high precision colors defined in it. Skia is also able to convert between source and destination color spaces, so colors can be manipulated with flexibility before being adapted to be displayed on concrete hardware.
 
