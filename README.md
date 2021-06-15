@@ -1,1 +1,1 @@
-Personal website, hosted at felipeerias.github.io
+Personal blog. Available at https://darker.ink and https://felipeerias.github.io
