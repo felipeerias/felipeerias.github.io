@@ -18,7 +18,7 @@ date: 2021-05-17
 
 ## Preface
 
-This blog post is based on my talk at BlinkOn 14 (May 2021). You can watch the recording here:
+This blog post is based on my talk at the [BlinkOn 14 conference](https://www.chromium.org/events/blinkon-14) (May 2021). You can watch the recording here:
 
 {% include youtubePlayer.html id=eHZVuHKWdd8 %}
 
@@ -97,8 +97,8 @@ Last year there was also a very interesting [discussion at the W3C's Technical A
 
 The CSS Color spec, among other things:
 
-* extends the color() function to let the author explicitly indicate the desired color space of a color, including those with a wide gamut;
-* defines the lab() and lch() functions to specify colors in [the CIE L*A*B colorspace](https://en.wikipedia.org/wiki/CIELAB_color_space);
+* extends the `color()` function to let the author explicitly indicate the desired color space of a color, including those with a wide gamut;
+* defines the `lab()` and `lch()` functions to specify colors in [the CIE L*A*B colorspace](https://en.wikipedia.org/wiki/CIELAB_color_space);
 * provides detailed control over how interpolation happens, as well as many other features;
 * contains a reference implementation for the operations described in it.
 
@@ -232,19 +232,19 @@ This job of actually painting those pixels is carried out by a multiplatform gra
 
 ### Richer colors
 
-In Chromium, there is already some support for color management, @media queries (color-gamut), color profiles (tags) in images, and so on. There is now also an intent to experiment with additional color spaces for canvas, WebGL and WebGPU.
+In Chromium, there is already some support for color management, `@media` queries (gamut), color profiles (tags) in images, and so on. There is now also an intent to experiment with additional color spaces for canvas, WebGL and WebGPU.
 
-> [Color managing canvas contents](https://github.com/WICG/canvas-color-space/blob/main/CanvasColorSpaceProposal.md)
+> [Color managing canvas contents](https://github.com/WICG/canvas-color-space/blob/main/CanvasColorSpaceProposal.md), [intent to ship](https://groups.google.com/a/chromium.org/g/blink-dev/c/epSTNPYkLIs/m/xamWYETxAgAJ).
 
 However, there isn't yet support for using richer color spaces with individual Web elements like we have seen in the previous section.
 
-Within Blink, CSS colors are parsed and stored into a small structure, just 32 bits, that is 8 bits per RGB color channel plus alpha.
+Within Blink, CSS colors are parsed and stored into a small structure with just 32 bits: that means 8 bits per RGB color channel (plus 8 more for transparency).
 
-> [third_party/blink/renderer/platform/graphics/color.h](https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/graphics/color.h)
+> See: [`color.h`](https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/graphics/color.h) (Chromium).
 
 These colors are eventually handed over to the Skia library to carry out the actual drawing. Skia then uses its own similar 32-bit format.
 
-> SkColor in [third_party/skia/include/core/SkColor.h](https://source.chromium.org/chromium/chromium/src/+/master:third_party/skia/include/core/SkColor.h)
+> See: `SkColor` in [SkColor.h](https://source.chromium.org/chromium/chromium/src/+/master:third_party/skia/include/core/SkColor.h) (Chromium).
 
 We can show this on the previous diagram. A Web page specifies a color in sRGB which is stored in a 32-bit format and passed across the rendering pipeline until it reaches Skia, where is is converted to a similar format, rastered, and displayed.
 
@@ -252,31 +252,24 @@ We can show this on the previous diagram. A Web page specifies a color in sRGB w
 ![Blink pipeline colors](/assets/img/blinkpipelineoverlay.png "Blink pipeline colors")
 
 
-
 This means that thoughout Blink's rendering pipeline colors are represented using only 32 bits, and this limits the precision and the richness of the colors that can be used and displayed in websites by Chromium.
 
 
 ### Some ideas from WebKit
 
-Blink started as a fork of WebKit in 2013 and although they have evolved in different ways, we can still look at WebKit to get some inspiration for storing and manipulating high-precision colors.
+Blink started as a fork of [WebKit](https://webkit.org/) in 2013 and although they have evolved in different ways, we can still look at WebKit to get some inspiration for storing and manipulating high-precision colors.
 
 Without getting into too much detail, WebKit supports a high precision representation of colors that stores four float values plus a colorspace. LAB is one of those spaces that may be used to define colors in WebKit.
 
-> [Improving Color on the Web](https://webkit.org/blog/6682/improving-color-on-the-web/)
+> Learn more: [Improving Color on the Web](https://webkit.org/blog/6682/improving-color-on-the-web/), [Wide Gamut Color in CSS with Display-P3](https://webkit.org/blog/10042/wide-gamut-color-in-css-with-display-p3/) (WebKit).
 
-> [Wide Gamut Color in CSS with Display-P3](https://webkit.org/blog/10042/wide-gamut-color-in-css-with-display-p3/)
-
-> [WebCore/platform/graphics/Color.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/Color.h)
-
-> [WebCore/platform/graphics/ColorComponents.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/ColorComponents.h)
-
-> [WebCore/platform/graphics/ColorSpace.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/ColorSpace.h)
+> See also: [Color.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/Color.h), [ColorComponents.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/ColorComponents.h) and [ColorSpace.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/ColorSpace.h) (WebKit).
 
 Having this support for higher precision colors has already made it possible to implement several color features in WebKit, for example:
 
-* lab(), lch() and color(lab ...); details at [Safari technology preview 120](https://webkit.org/blog/11548/release-notes-for-safari-technology-preview-120/)
-* color(a98-rgb ...), color(prophoto-rgb ...), color(rec2020 ...), color(xyz ...), hwb(); details at [Safari technology preview 121](https://webkit.org/blog/11555/release-notes-for-safari-technology-preview-121/)
-* color-contrast() and color-mix() from CSS Color 5; details at [Safari technology preview 121](https://webkit.org/blog/11577/release-notes-for-safari-technology-preview-122/)
+* `lab()`, `lch()` and `color(lab …)`; details at [Safari technology preview 120](https://webkit.org/blog/11548/release-notes-for-safari-technology-preview-120/)
+* `color(a98-rgb …)`, `color(prophoto-rgb …)`, `color(rec2020 …)`, `color(xyz …)`, `hwb()`; details at [Safari technology preview 121](https://webkit.org/blog/11555/release-notes-for-safari-technology-preview-121/)
+* `color-contrast()` and `color-mix()` from [CSS Color 5](https://www.w3.org/TR/css-color-5/); details at [Safari technology preview 121](https://webkit.org/blog/11577/release-notes-for-safari-technology-preview-122/)
 
 An importabnt difference is that WebKit uses the platform's graphic libraries directly (e.g. CoreGraphics on Mac) whereas Chromium uses Skia across different platforms. Support for displaying colors beyond the sRGB gamut may not be available in all platforms.
 
@@ -287,27 +280,21 @@ Interestingly, Skia does not have the same limits in color precision and range a
 
 Internally, it has a format for high-precision colors that holds four float values, and it is also able to take color spaces into account.
 
-> See: `SkRGBA4f` and `SkColor4f` in [`SkColor.h`](https://source.chromium.org/chromium/chromium/src/+/master:third_party/skia/include/core/SkColor.h)
+> See: `SkRGBA4f` and `SkColor4f` in [`SkColor.h`](https://source.chromium.org/chromium/chromium/src/+/master:third_party/skia/include/core/SkColor.h).
 
 Much of the Skia API is already able to take as input a colorspace and one or more high precision colors defined in it. Skia is also able to convert between source and destination color spaces, so colors can be manipulated with flexibility before being adapted to be displayed on concrete hardware.
 
-> In Skia, a color space is defined by a transfer function and a gamut.
-> Transfer function: SRGB, 2Dot2, Linear, Rec2020, PQ, HLG.
-> Gamut: SRGB, AdobeRGB, DisplayP3, Rec2020, XYZ.
-> [third_party/skia/include/core/SkColorSpace.h](https://source.chromium.org/chromium/chromium/src/+/master:third_party/skia/include/core/SkColorSpace.h)
+> In Skia, a color space is defined by a transfer function and a gamut. See: [`SkColorSpace.h`](https://source.chromium.org/chromium/chromium/src/+/master:third_party/skia/include/core/SkColorSpace.h).
 
 So, Skia is able to paint richer colors on hardware that supports them.
 
 This means that, if we managed to get that rich color information defined in the Web sources at the beginning of the pipeline all the way to Skia at the end of the pipeline, we would be able to paint those colors correctly on the screen :)
 
-There are a couple things worth mentioning here.
+However, two more things would be needed in order to implement the full functionality of the CSS Color specs. First, Skia's representation of high-precision colors still uses the RGBA structure, so out of the box Skia does not support other formats like LAB or LCH.
 
-First, Skia's representation of high-precision colors still uses the RGBA structure, so out of the box Skia does not support other formats like LAB or LCH.
+Secondly, as we have seen, the CSS Color spec provides ways to specify the interpolation colorspace for gradients, transitions, etc. Blink relies on Skia for this interpolation, but Skia does not provide fine-grained control: Skia will always use the colorspace where the source colors have been defined, and does not support interpolating in a different space.
 
-Secondly, as we have seen, the CSS Color spec provides ways to specify the interpolation colorspace for gradients, transitions, etc.
-
-Blink relies on Skia for this interpolation, but Skia does not provide fine-grained control: Skia will always use the colorspace where the source colors have been defined, and does not support interpolating in a different space.
-
+These point towards the need for an additional layer between the Blink painting code and SKia that is able to translate the richer color information into formats that Skia can understand and use to display those colors on the screen.
 
 ### Summary
 
