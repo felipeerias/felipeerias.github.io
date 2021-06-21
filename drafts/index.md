@@ -139,14 +139,13 @@ As you can see, the colors that fall within the Display-P3 space but outside of 
 
 When a Web browser is not able to display a color because of hardware and/or software limitations, it will use instead the closest one of the colors that it can display.
 
-For example, the following image uses two different shades of red: one that is within the sRGB gamut and another that is outside of it. On sRGB displays, both colors are painted the same and the result is a uniform red square. However, on a system that can display wide-gamut colors, both shades of red will be painted differently and you will be able to see a faint WebKit logo inside the square.
+Let's see an example of this. The image on the left below is a uniform red square in the sRGB gamut.
 
-
-![wide-gamut color example](/assets/img/Webkit-logo-P3.png "Example of wide-gamut colors")
-
+The image on the right is slightly different, as it actually uses two different shades of red: one that is within the sRGB gamut and another that is outside of it. On sRGB displays, both colors are painted the same and the result is a uniform red square, just like the first image. However, on a system that can display wide-gamut colors, both shades of red will be painted differently and you will be able to see a faint WebKit logo inside the square.
 
 {% include 2images.html src1="/assets/img/Webkit-logo-sRGB.png" alt1="sRGB color example" title1="Example of sRGB color" src2="/assets/img/Webkit-logo-P3.png" alt2="wide-gamut color example" title2="Example of wide-gamut colors" %}
 
+> Source and more information: [Comparison between normal and wide-gamut images](https://webkit.org/blog-files/color-gamut/) (WebKit).
 
 Furthermore, there are color spaces that are even larger than Display-P3 which are for now only used for professional equipment but which, at some point in the future, will probably become popular in their turn.
 
@@ -243,7 +242,7 @@ This job of actually painting those pixels is carried out by a multiplatform gra
 
 ![Blink pipeline](/assets/img/blinkpipeline.png "Blink pipeline")
 
-> [Life of a Pixel](http://bit.ly/lifeofapixel)
+> Learn more: [Life of a Pixel](http://bit.ly/lifeofapixel) (Chromium team).
 
 
 ### Richer colors
@@ -281,7 +280,7 @@ Blink started as a fork of [WebKit](https://webkit.org/) in 2013 and although th
 
 Without getting into too much detail, WebKit supports a high precision representation of colors that stores four float values plus a colorspace. LAB is one of those spaces that may be used to define colors in WebKit.
 
-> Learn more: [Improving Color on the Web](https://webkit.org/blog/6682/improving-color-on-the-web/), [Wide Gamut Color in CSS with Display-P3](https://webkit.org/blog/10042/wide-gamut-color-in-css-with-display-p3/), [Comparison between normal and wide-gamut images](https://webkit.org/blog-files/color-gamut/) (WebKit).
+> Learn more: [Improving Color on the Web](https://webkit.org/blog/6682/improving-color-on-the-web/), [Wide Gamut Color in CSS with Display-P3](https://webkit.org/blog/10042/wide-gamut-color-in-css-with-display-p3/) (WebKit).
 
 > See also: [Color.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/Color.h), [ColorComponents.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/ColorComponents.h) and [ColorSpace.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/ColorSpace.h) (WebKit).
 
