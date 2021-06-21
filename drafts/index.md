@@ -64,7 +64,7 @@ As you can see, there are many colors that we can perceive but can not be descri
 > Learn more: [Color: From Hexcodes to Eyeballs](http://jamie-wong.com/post/color/) (Jamie Wong)
 
 
-(These graphs are a useful tool to visualize and compare different gamuts but sometimes can be a bit confusing because they use colors that we can obviously see but then claim that some of the colors *represented* by them are outside the gamut that our device can display.)
+(These graphs are a useful tool to visualize and compare different gamuts but sometimes can be a bit confusing, because they use colors that we can obviously see but then tell us that some of the colors *represented* by them are outside the gamut that our device can display.)
 
 
 ## Colors on the Web
