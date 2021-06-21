@@ -93,11 +93,11 @@ The rest of this post will focus specifically on adding support on [Blink](https
 
 ### CSS Color
 
-The reference specification for richer colors on the Web is the CSS Color Module elaborated by the CSS Working Group. [CSS Color Module 4](https://drafts.csswg.org/css-color) describes most of the changes discussed here and [CSS Color Module 5](http://drafts.csswg.org/css-color-5) brings additional color modification functionality.
+The reference specification for richer colors on the Web is the CSS Color Module elaborated by the CSS Working Group. [CSS Color Module 4](https://drafts.csswg.org/css-color) describes most of the changes discussed here and [CSS Color Module 5](http://drafts.csswg.org/css-color-5) will brings additional functionality.
 
 There is as well a [Color on the Web](https://www.w3.org/community/colorweb/) community group at the W3C that among other things organises a [workshop on wide color gamut for the Web](https://www.w3.org/Graphics/Color/Workshop/overview.html).
 
-Last year there was also a very interesting [discussion at the W3C's Technical Architecture Group](https://github.com/w3ctag/design-reviews/issues/488) about how having colors outside of the sRGB gamut opened up questions about interoperability between the different elements of the platform.
+In 2020 there was also a very interesting [discussion at the W3C's Technical Architecture Group](https://github.com/w3ctag/design-reviews/issues/488) about how having colors outside of the sRGB gamut opened up questions about interoperability between the different elements of the platform.
 
 (Note: this list does not pretend to be exhaustive and it intentionally leaves aside the many groups working on standards beyond CSS and beyond the Web in general.)
 
@@ -136,7 +136,16 @@ As you can see, the colors that fall within the Display-P3 space but outside of 
 
 > Learn more: [Wide Gamut Color in CSS with Display-P3](https://webkit.org/blog/10042/wide-gamut-color-in-css-with-display-p3/) (WebKit)
 
-And that is not all, there are color spaces that are even larger than Display-P3 which are for now only used for professional equipment but which, at some point in the future, will probably become popular in their turn.
+
+When a Web browser is not able to display a color because of hardware and/or software limitations, it will use instead the closest one of the colors that it can display.
+
+For example, the following image uses two different shades of red: one that is within the sRGB gamut and another that is outside of it. On sRGB displays, both colors are painted the same and the result is a uniform red square. However, on a system that can display wide-gamut colors, both shades of red will be painted differently and you will be able to see a faint WebKit logo inside the square.
+
+
+![wide-gamut color example](/assets/img/Webkit-logo-P3.png "Example of wide-gamut colors")
+
+
+Furthermore, there are color spaces that are even larger than Display-P3 which are for now only used for professional equipment but which, at some point in the future, will probably become popular in their turn.
 
 Adding wider color spaces to the Web is as much about supporting what hardware can do today as it is about setting us in the path to support what it will do in the future.
 
