@@ -148,6 +148,20 @@ p.indented {
   padding: 0.25rem;
 }
 
+/* IMAGE INCLUDES */
+
+.main-content .hflex {
+	display: flex;
+	max-width: 100%;
+	flex-direction: row;
+	gap: 1px;
+}
+
+.main-content .hflex img {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
 /* HEADER */
 
 .page-header {
