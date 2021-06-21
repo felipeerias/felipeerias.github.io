@@ -145,6 +145,9 @@ For example, the following image uses two different shades of red: one that is w
 ![wide-gamut color example](/assets/img/Webkit-logo-P3.png "Example of wide-gamut colors")
 
 
+{% include 2images.html src1="/assets/img/Webkit-logo-sRGB.png" alt1="sRGB color example" title1="Example of sRGB color" src2="/assets/img/Webkit-logo-P3.png" alt2="wide-gamut color example" title2="Example of wide-gamut colors" %}
+
+
 Furthermore, there are color spaces that are even larger than Display-P3 which are for now only used for professional equipment but which, at some point in the future, will probably become popular in their turn.
 
 Adding wider color spaces to the Web is as much about supporting what hardware can do today as it is about setting us in the path to support what it will do in the future.
