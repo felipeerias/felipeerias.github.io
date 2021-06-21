@@ -139,9 +139,7 @@ As you can see, the colors that fall within the Display-P3 space but outside of 
 
 When a Web browser is not able to display a color because of hardware and/or software limitations, it will use instead the closest one of the colors that it can display.
 
-Let's see an example of this. The image on the left below is a uniform red square in the sRGB gamut.
-
-The image on the right is slightly different, as it actually uses two different shades of red: one that is within the sRGB gamut and another that is outside of it. On sRGB displays, both colors are painted the same and the result is a uniform red square, just like the first image. However, on a system that can display wide-gamut colors, both shades of red will be painted differently and you will be able to see a faint WebKit logo inside the square.
+Let's see an example of this. The image on the left below is a uniform red square in the sRGB gamut. The image on the right is slightly different, as it actually uses two different shades of red: one that is within the sRGB gamut and another that is outside of it. On sRGB displays, both colors are painted the same and the result is a uniform red square, just like the first image. However, on a system that can display wide-gamut colors, both shades of red will be painted differently and you will be able to see a faint WebKit logo inside the square.
 
 {% include 2images.html src1="/assets/img/Webkit-logo-sRGB.png" alt1="sRGB color example" title1="Example of sRGB color" src2="/assets/img/Webkit-logo-P3.png" alt2="wide-gamut color example" title2="Example of wide-gamut colors" %}
 
