@@ -20,7 +20,7 @@ date: 2021-05-17
 
 This blog post is based on my talk at the [BlinkOn 14 conference](https://www.chromium.org/events/blinkon-14) (May 2021). You can watch the recording here:
 
-{% include youtubePlayer.html id=eHZVuHKWdd8 %}
+{% include youtubePlayer.html id="eHZVuHKWdd8" %}
 
 > [Towards richer colors in Blink (BlinkOn 14)](https://www.youtube.com/watch?v=eHZVuHKWdd8)
 
