@@ -158,15 +158,17 @@ p.indented {
   align-items: center;
 }
 
-.main-content .hflex div img {
+.main-content .hflex img {
+  object-fit: cover;
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
 }
 
-.main-content .hflex div img {
-  object-fit: cover;
+.main-content .hflex img.square {
+  aspect-ratio: 1 / 1;
 }
+
 
 /* HEADER */
 
