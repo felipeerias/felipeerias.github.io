@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Towards richer colors in Blink
+title: Towards richer colors in the Web
 date: 2021-05-17
 ---
 
@@ -37,19 +37,16 @@ A *color space* is a way to describe and organize colors so they can be identifi
 
 These color spaces consist of a mathematical color model that specifies how colors are described (i.e. as tuples of numbers) and a precise description of how those components are to be interpreted.
 
-Until recently, the Web has been built on top of the [sRGB](https://en.wikipedia.org/wiki/SRGB) color space (1996) which describes colors with a [RGB color model](https://en.wikipedia.org/wiki/RGB_color_model) (red, green and blue) plus a non-linear transfer function to link the numerical value for each component with the intensity of the corresponding primary color.
+The range of colors that a hardware display is able to show is called its [gamut](https://en.wikipedia.org/wiki/Gamut). When we want to show an image that uses a larger color space than that gamut, its colors will have to be _mapped_ to the ones that can be actually displayed: this process is called _gamut mapping_.
 
-The range of colors that a hardware display is able to show is called its *gamut*. The sRGB color space gained popularity early on because it was well suited to be displayed by the CRT monitors that were common at the time. 
+Essentially, the colors in the original image are "squeezed" so they can be displayed by the device. This process can be rather complex, because we want the image being displayed to preserve as much of the intent of the original as possible.
 
-CSS includes plenty of functions and shortcuts to define a color in that sRGB space. For example:
+When we talk about software, we say that an application is _color managed_ when it is aware of the different color spaces used by its source media and is able to use that information when deciding how that media should be displayed on the screen.
 
-{% include 3colors.html color1="#40E0D0" text1="#40E0D0" color2="rgb(218, 112, 214)" text2="rgb(218, 112, 214)" color3="PeachPuff" text3="PeachPuff" %}
+Traditionally, the Web has been built on top of the [sRGB](https://en.wikipedia.org/wiki/SRGB) color space (1996) which describes colors with a [RGB color model](https://en.wikipedia.org/wiki/RGB_color_model) (red, green and blue) plus a non-linear transfer function to link the numerical value for each component with the intensity of the corresponding primary color.
 
-{% include 3colors.html color1="rgba(211, 65, 0, .8)" text1="rgba(211, 65, 0, .8)" color2="hsl(177, 70%, 41%)" text2="hsl(177, 70%, 41%)" color3="LightSkyBlue" text3="LightSkyBlue" %}
 
-> See also: [Color CSS data type](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value)
-
-There are many other color spaces. The graph below represent the [chromaticity](https://en.wikipedia.org/wiki/Chromaticity) of the [CIE XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space) color space, which was specifically designed to cover all colors that an average human can see.
+There are many other color spaces. The graph below represents the [chromaticity](https://en.wikipedia.org/wiki/Chromaticity) of the [CIE XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space) color space, which was specifically designed to cover all colors that an average human can see.
 
 ![CIE](/assets/img/CIExy1931.png "CIE XYZ chromaticity")
 
@@ -67,9 +64,18 @@ As you can see, there are many colors that we can perceive but can not be descri
 > Learn more: [Color: From Hexcodes to Eyeballs](http://jamie-wong.com/post/color/) (Jamie Wong)
 
 
+(These graphs are a useful tool to visualize and compare different gamuts but sometimes can be a bit confusing because they use colors that we can obviously see but then claim that some of the colors *represented* by them are outside the gamut that our device can display.)
 
 
 ## Colors on the Web
+
+The sRGB color space gained popularity early on because it was well suited to be displayed by the CRT monitors that were common at the time. CSS includes plenty of functions and shortcuts to define a color in that sRGB space, for example:
+
+{% include 3colors.html color1="#40E0D0" text1="#40E0D0" color2="rgb(218, 112, 214)" text2="rgb(218, 112, 214)" color3="PeachPuff" text3="PeachPuff" %}
+
+{% include 3colors.html color1="rgba(211, 65, 0, .8)" text1="rgba(211, 65, 0, .8)" color2="hsl(177, 70%, 41%)" text2="hsl(177, 70%, 41%)" color3="LightSkyBlue" text3="LightSkyBlue" %}
+
+> See also: [Color CSS data type](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value)
 
 As technology has improved over time, many devices nowadays are able to display colors that go beyond the sRGB color space. On the Web platform there is increasing interest in adding support for wider color gamuts to different elements.
 
@@ -82,7 +88,7 @@ Several JavaScript libraries already provide a lot of functionality for manipula
 
 The major Web browsers offer different levels of support for color management and access to wider gamuts.
 
-This post will focus specifically on adding support on [Blink](https://www.chromium.org/blink) and [Chromium](https://www.chromium.org/Home) for richer colors in elements defined in HTML and CSS.
+The rest of this post will focus specifically on adding support on [Blink](https://www.chromium.org/blink) and [Chromium](https://www.chromium.org/Home) for richer colors in elements defined in HTML and CSS.
 
 
 ### CSS Color
@@ -230,7 +236,11 @@ This job of actually painting those pixels is carried out by a multiplatform gra
 
 ### Richer colors
 
-In Chromium, there is already some support for color management, `@media` queries (gamut), color profiles (tags) in images, and so on. There is now also an intent to experiment with additional color spaces for canvas, WebGL and WebGPU.
+In Chromium, there is already some support for color management, `@media` queries (gamut), color profiles (tags) in images, and so on.
+
+> Learn more about embedded color profiles in images: [Digital-Image Color Spaces](http://regex.info/blog/photo-tech/color-spaces-page2) (Jeffrey Friedl).
+
+There is now also an intent to experiment with additional color spaces for canvas, WebGL and WebGPU.
 
 > [Color managing canvas contents](https://github.com/WICG/canvas-color-space/blob/main/CanvasColorSpaceProposal.md), [intent to ship](https://groups.google.com/a/chromium.org/g/blink-dev/c/epSTNPYkLIs/m/xamWYETxAgAJ).
 
@@ -259,7 +269,7 @@ Blink started as a fork of [WebKit](https://webkit.org/) in 2013 and although th
 
 Without getting into too much detail, WebKit supports a high precision representation of colors that stores four float values plus a colorspace. LAB is one of those spaces that may be used to define colors in WebKit.
 
-> Learn more: [Improving Color on the Web](https://webkit.org/blog/6682/improving-color-on-the-web/), [Wide Gamut Color in CSS with Display-P3](https://webkit.org/blog/10042/wide-gamut-color-in-css-with-display-p3/) (WebKit).
+> Learn more: [Improving Color on the Web](https://webkit.org/blog/6682/improving-color-on-the-web/), [Wide Gamut Color in CSS with Display-P3](https://webkit.org/blog/10042/wide-gamut-color-in-css-with-display-p3/), [Comparison between normal and wide-gamut images](https://webkit.org/blog-files/color-gamut/) (WebKit).
 
 > See also: [Color.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/Color.h), [ColorComponents.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/ColorComponents.h) and [ColorSpace.h](https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/platform/graphics/ColorSpace.h) (WebKit).
 
