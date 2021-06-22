@@ -97,7 +97,7 @@ The reference specification for richer colors on the Web is the CSS Color Module
 
 There is as well a [Color on the Web](https://www.w3.org/community/colorweb/) community group at the W3C that among other things organises a [workshop on wide color gamut for the Web](https://www.w3.org/Graphics/Color/Workshop/overview.html).
 
-In 2020 there was also a very interesting [discussion at the W3C's Technical Architecture Group](https://github.com/w3ctag/design-reviews/issues/488) about how having colors outside of the sRGB gamut opened up questions about interoperability between the different elements of the platform.
+In 2020 there was also a very interesting [discussion at the W3C's Technical Architecture Group](https://github.com/w3ctag/design-reviews/issues/488) about how having colors outside of the sRGB gamut opened up questions about interoperability between the different elements of the platform, as well as interesting observations around how to support calculations for improved color contrast and accessibility.
 
 (Note: this list does not pretend to be exhaustive and it intentionally leaves aside the many groups working on standards beyond CSS and beyond the Web in general.)
 
