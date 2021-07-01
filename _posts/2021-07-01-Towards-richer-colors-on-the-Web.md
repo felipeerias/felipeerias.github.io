@@ -251,7 +251,7 @@ In Chromium, there is already some support for color management, `@media` querie
 
 There is now also an intent to experiment with additional color spaces for canvas, WebGL and WebGPU.
 
-> [Color managing canvas contents](https://github.com/WICG/canvas-color-space/blob/main/CanvasColorSpaceProposal.md), [intent to ship](https://groups.google.com/a/chromium.org/g/blink-dev/c/epSTNPYkLIs/m/xamWYETxAgAJ).
+> See: [Color managing canvas contents](https://github.com/WICG/canvas-color-space/blob/main/CanvasColorSpaceProposal.md), [intent to ship](https://groups.google.com/a/chromium.org/g/blink-dev/c/epSTNPYkLIs/m/xamWYETxAgAJ).
 
 However, there isn't yet support for using richer color spaces with individual Web elements like we have seen in the previous section.
 
