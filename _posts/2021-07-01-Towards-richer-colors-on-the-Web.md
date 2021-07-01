@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Towards richer colors in the Web
+title: Towards richer colors on the Web
 date: 2021-07-01
 ---
 
@@ -153,7 +153,7 @@ Adding wider color spaces to the Web is as much about supporting what hardware c
 #### Consistent and predictable colors
 
 
-Secondly, another limitation of sRGB in the Web is that it is not perceptually uniform: the same numeric amount of change in a value does not cause similar changes in the colors that we perceive.
+Secondly, another limitation of sRGB on the Web is that it is not perceptually uniform: the same numeric amount of change in a value does not cause similar changes in the colors that we perceive.
 
 We can see this clearly with HLS, which is an alternate way to express the same sRGB colors in terms of hue, saturation, and lightness. Let's see some examples.
 
