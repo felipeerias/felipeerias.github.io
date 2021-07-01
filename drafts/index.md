@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Towards richer colors in the Web
-date: 2021-05-17
+date: 2021-07-01
 ---
 
 - [Preface](#preface)
