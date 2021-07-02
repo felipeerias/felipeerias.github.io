@@ -186,7 +186,7 @@ Changes in lightness:
 
 Changes in chroma (or "amount of color"):
 
-{% include 3colors.html color1="rgb(99.14% 63.48% 34.71%)" text1="LCH(50% 10 319)" color2="rgb(65.55% 33.99% 73.44%)" text2="LCH(50% 60 319)" color3="rgb(78.37% 0.5% 96.29%)" text3="LCH(50% 60 319)" %}
+{% include 3colors.html color1="rgb(50.21% 45.03% 51.1%)" text1="LCH(50% 10 319)" color2="rgb(65.55% 33.99% 73.44%)" text2="LCH(50% 60 319)" color3="rgb(78.37% 0.5% 96.29%)" text3="LCH(50% 110 319)" %}
 
 Changes in hue:
 
