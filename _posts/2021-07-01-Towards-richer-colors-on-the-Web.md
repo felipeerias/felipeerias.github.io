@@ -37,14 +37,13 @@ A *color space* is a way to describe and organize colors so they can be identifi
 
 These color spaces consist of a mathematical color model that specifies how colors are described (i.e. as tuples of numbers) and a precise description of how those components are to be interpreted.
 
-The range of colors that a hardware display is able to show is called its [gamut](https://en.wikipedia.org/wiki/Gamut). When we want to show an image that uses a larger color space than that gamut, its colors will have to be _mapped_ to the ones that can be actually displayed: this process is called _gamut mapping_.
+The range of colors that a hardware display is able to show is called its [gamut](https://en.wikipedia.org/wiki/Gamut). When we want to show an image that uses a larger color space than this gamut, its colors will have to be _mapped_ to the ones that can be actually displayed: this process is called _gamut mapping_.
 
 Essentially, the colors in the original image are "squeezed" so they can be displayed by the device. This process can be rather complex, because we want the image being displayed to preserve as much of the intent of the original as possible.
 
 When we talk about software, we say that an application is _color managed_ when it is aware of the different color spaces used by its source media and is able to use that information when deciding how that media should be displayed on the screen.
 
-Traditionally, the Web has been built on top of the [sRGB](https://en.wikipedia.org/wiki/SRGB) color space (1996) which describes colors with a [RGB color model](https://en.wikipedia.org/wiki/RGB_color_model) (red, green and blue) plus a non-linear transfer function to link the numerical value for each component with the intensity of the corresponding primary color.
-
+Traditionally, the Web has been built on top of the [sRGB](https://en.wikipedia.org/wiki/SRGB) color space (created in 1996) which describes colors with a [RGB color model](https://en.wikipedia.org/wiki/RGB_color_model) (red, green and blue) plus a non-linear transfer function to link the numerical value for each component with the intensity of the corresponding primary color.
 
 There are many other color spaces. The graph below represents the [chromaticity](https://en.wikipedia.org/wiki/Chromaticity) of the [CIE XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space) color space, which was specifically designed to cover all colors that an average human can see.
 
@@ -60,16 +59,14 @@ From that large map of colors within human perception, we can identify those tha
 
 As you can see, there are many colors that we can perceive but can not be described by sRGB!
 
-
 > Learn more: [Color: From Hexcodes to Eyeballs](http://jamie-wong.com/post/color/) (Jamie Wong)
 
-
-(These graphs are a useful tool to visualize and compare different gamuts but sometimes can be a bit confusing, because they use colors that we can obviously see but then tell us that some of the colors *represented* by them are outside the gamut that our device can display.)
+(Note: these graphs are a useful tool to visualize and compare different gamuts but sometimes can be a bit confusing, because they use colors that we can obviously see but then tell us that some of the colors *represented* by them are outside the gamut that our device can display.)
 
 
 ## Colors on the Web
 
-The sRGB color space gained popularity early on because it was well suited to be displayed by the CRT monitors that were common at the time. CSS includes plenty of functions and shortcuts to define a color in that sRGB space, for example:
+The sRGB color space gained popularity because it was well suited to be displayed by the CRT monitors that were common at the time. CSS includes plenty of functions and shortcuts to define colors in the sRGB space, for example:
 
 {% include 3colors.html color1="#40E0D0" text1="#40E0D0" color2="rgb(218, 112, 214)" text2="rgb(218, 112, 214)" color3="PeachPuff" text3="PeachPuff" %}
 
@@ -77,7 +74,7 @@ The sRGB color space gained popularity early on because it was well suited to be
 
 > See also: [Color CSS data type](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value)
 
-As technology has improved over time, many devices nowadays are able to display colors that go beyond the sRGB color space. On the Web platform there is increasing interest in adding support for wider color gamuts to different elements.
+As technology has improved over time, nowaday many devices are able to display colors that go beyond the sRGB color space. On the Web platform there is increasing interest in adding support for wider color gamuts to different elements.
 
 > Learn more:
 > [Unlocking Colors](https://bkardell.com/blog/Unlocking-Colors.html) (Brian Kardell), [LCH colors in CSS: what, why, and how?](https://lea.verou.me/2020/04/lch-colors-in-css-what-why-and-how/) (Lea Verou)
@@ -88,12 +85,12 @@ Several JavaScript libraries already provide a lot of functionality for manipula
 
 The major Web browsers offer different levels of support for color management and access to wider gamuts.
 
-The rest of this post will focus specifically on adding support on [Blink](https://www.chromium.org/blink) and [Chromium](https://www.chromium.org/Home) for richer colors in elements defined in HTML and CSS.
+This article will focus specifically on adding support on [Blink](https://www.chromium.org/blink) and [Chromium](https://www.chromium.org/Home) for richer colors in elements defined in HTML and CSS.
 
 
 ### CSS Color
 
-The reference specification for richer colors on the Web is the CSS Color Module elaborated by the CSS Working Group. [CSS Color Module 4](https://drafts.csswg.org/css-color) describes most of the changes discussed here and [CSS Color Module 5](http://drafts.csswg.org/css-color-5) will brings additional functionality.
+The reference specification for richer colors on the Web is the CSS Color Module elaborated by the CSS Working Group. [CSS Color Module 4](https://drafts.csswg.org/css-color) describes most of the changes discussed here and [CSS Color Module 5](http://drafts.csswg.org/css-color-5) will bring additional functionality.
 
 There is as well a [Color on the Web](https://www.w3.org/community/colorweb/) community group at the W3C that among other things organises a [workshop on wide color gamut for the Web](https://www.w3.org/Graphics/Color/Workshop/overview.html).
 
@@ -126,7 +123,7 @@ The Display-P3 space is about one third larger than sRGB. This means that from C
 > 
 > See also: [Wide-gamut color on the web](https://www.reddit.com/r/webdev/comments/ctiixa/widegamut_color_on_the_web_the_status_in_august)
 
-This is another way of visualizing the same thing, where the white line in each case represents the boundary between what can be described within sRGB and what is inside Display-P3.
+This is another way of visualizing the same idea, where the white line in each case represents the boundary between what can be described by sRGB and what is within Display-P3.
 
 
 ![srgb p3 outline](/assets/img/sRGB_P3_outline.png "Display-P3 and sRGB")
@@ -145,9 +142,9 @@ Let's see an example of this. The image on the left below is a uniform red squar
 
 > Source and more information: [Comparison between normal and wide-gamut images](https://webkit.org/blog-files/color-gamut/) (WebKit).
 
-Furthermore, there are color spaces that are even larger than Display-P3 which are for now only used for professional equipment but which, at some point in the future, will probably become popular in their turn.
+Furthermore, there are color spaces that are even larger than Display-P3; for now, they are mostly reserved to professional equipment and applications, but it is likely that at some point in the future some of them will probably become popular in their turn.
 
-Adding wider color spaces to the Web is as much about supporting what hardware can do today as it is about setting us in the path to support what it will do in the future.
+Adding wider color spaces to the Web is as much about supporting what widely available hardware can do today as it is about setting us in the path to support what it will do in the future.
 
 
 #### Consistent and predictable colors
