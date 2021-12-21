@@ -63,11 +63,11 @@ Internship at IBM Deutschland GmbH. (2006 - 2007)
 
 Since December 2020, I am part of the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers).
 
-Among other things, I am a participant in the [W3C Cascading Style Sheets (CSS) Working Group](https://www.w3.org/Style/CSS/) and co-editor of the Internet-Draft ["Use Cases and Requirements for Web Packages"](https://datatracker.ietf.org/doc/draft-ietf-wpack-use-cases) ([GihHub](https://github.com/wpack-wg/use-cases/)) at the IETF [WPACK Working Group](https://datatracker.ietf.org/wg/wpack/documents/). I am also one of the authors of the explainer and prototypes for our [Bundle Preloading proposal](https://github.com/WICG/bundle-preloading).
+Among other things, I am a participant in the [W3C Cascading Style Sheets (CSS) Working Group](https://www.w3.org/Style/CSS/) and co-editor of the Internet-Draft ["Use Cases and Requirements for Web Packages"](https://datatracker.ietf.org/doc/draft-ietf-wpack-use-cases) ([GihHub](https://github.com/wpack-wg/use-cases/)) at the IETF [WPACK Working Group](https://datatracker.ietf.org/wg/wpack/documents/). I am also one of the authors of the explainer and prototypes for the [Bundle Preloading](https://github.com/WICG/bundle-preloading) proposal.
 
 ### Chromium Web browser (2020–present)
 
-Since the beginning of 2020, I have been contributing to the Chromium Web browser. This is some of the work that I've done:
+I have been contributing to the Chromium Web browser since the beginning of 2020. This is some of the work that I've done:
 
 * Currently working on the implementation of the CSS properties `scrollbar-width` and `scrollbar-color`:
   - More details in the [CSS Scrollbars](https://drafts.csswg.org/css-scrollbars-1/) spec. Also in the MDN entries for [scrollbar-width](https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-width) and [scrollbar-color](https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-color).
@@ -78,13 +78,13 @@ Since the beginning of 2020, I have been contributing to the Chromium Web browse
    - W3C TAG design review: [CSS Overflow: scrollbar-gutter #520](https://groups.google.com/a/chromium.org/g/blink-dev/c/71vtc_Xv7jk/m/EezoVS9dBQAJ)
    - Code contributions: [Bug 710214](https://crbug.com/710214)
    - Shipped in Chromium: [Intent to Ship](https://groups.google.com/a/chromium.org/g/blink-dev/c/71vtc_Xv7jk/m/EezoVS9dBQAJ) (July 2021)
-   - Identified and fixed a related bug in the DevTools highlight: [discussion in the DevTools group](https://groups.google.com/a/chromium.org/g/devtools-dev/c/_6JKYu7qzto/m/1v3dZOpfCQAJ)
+   - Identified and fixed a related bug in the DevTools highlight UI: [discussion in the DevTools group](https://groups.google.com/a/chromium.org/g/devtools-dev/c/_6JKYu7qzto/m/1v3dZOpfCQAJ)
 * Ongoing research on enabling richer colors in the browser:
     - Chromium bug: [Bug 1026287](https://crbug.com/1026287)
     - W3C TAG design review: [CSS Color: lab(), lch() #488](https://github.com/w3ctag/design-reviews/issues/488)
     - Talk at Blinkon (May 2021): [Towards richer colors in Blink (BlinkOn 14)](https://www.youtube.com/watch?v=eHZVuHKWdd8)
     - Blog post: [Towards richer colors on the Web](https://darker.ink/writings/Towards-richer-colors-on-the-Web)
-* Implemented the "auto" value for the -webkit-appearance CSS property: [Bug 965432](https://crbug.com/965432)
+* Implemented the `auto` value for the `-webkit-appearance` CSS property: [Bug 965432](https://crbug.com/965432)
 * Added support for printing in the Japanese page sizes JIS B5 and JIS B4: [Bug 1047642](https://crbug.com/1047642)
 * Improved warnings in link preload: [Bug 1047945](https://crbug.com/1047945)
 
