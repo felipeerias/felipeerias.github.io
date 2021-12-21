@@ -69,7 +69,7 @@ Among other things, I am a participant in the [W3C Cascading Style Sheets (CSS) 
 
 Since the beginning of 2020, I have been contributing to the Chromium Web browser. This is some of the work that I've done:
 
-* Working on the implementation of the CSS properties [scrollbar-width](https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-width) and [scrollbar-color](https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-color) defined in the [CSS Scrollbars](https://drafts.csswg.org/css-scrollbars-1/) spec: [Bug 891944](https://crbug.com/891944)
+* Currently working on the implementation of the CSS properties `scrollbar-width` and `scrollbar-color`:
   - More details in the [CSS Scrollbars](https://drafts.csswg.org/css-scrollbars-1/) spec. Also in the MDN entries for [scrollbar-width](https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-width) and [scrollbar-color](https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-color).
   - Code contributions: [Bug 891944](https://crbug.com/891944)
 * Implemented the `scrollbar-gutter` CSS property, which gives Web authors more control over how their layouts respond to the presence/absence of scrollbars.
