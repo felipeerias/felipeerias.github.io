@@ -9,7 +9,7 @@ I am a Software Engineer and Interaction Designer.
 
 Since December 2020, I am an independent consultant in Japan, currently collaborating with the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers).
 
-I am also contributing to the [Chromium](https://chromium.googlesource.com/chromium/src.git) Web browser and collaborating with the [University of Kyoto's CSEAS](https://en.kyoto.cseas.kyoto-u.ac.jp/) as an affiliated researcher.
+I am also contributing to the [Chromium](https://chromium.googlesource.com/chromium/src.git) Web browser and other Free Software projects.
 
 From 2015 to 2019, I worked at [Terranet AB](http://www.terranet.se/), a Swedish R&D company focused on proximity networks, designing and implementing innovative mobile software that took advantage of next-generation P2P connectivity.
 
