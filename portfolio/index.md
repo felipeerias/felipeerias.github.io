@@ -59,7 +59,7 @@ Internship at IBM Deutschland GmbH. (2006 - 2007)
 
 (Please keep reading to find each of these in the context of its project)
 
-### Erias Co., Ltd.: founder (2022–present)
+### Erias Co., Ltd. (since 2022)
 
 In January 2022 I founded **Erias Co., Ltd.** ([registration details](https://www.houjin-bangou.nta.go.jp/henkorireki-johoto.html?selHouzinNo=2130003007696), [LinkedIn](https://www.linkedin.com/company/erias-co-ltd))., a Japan-based company.
 
