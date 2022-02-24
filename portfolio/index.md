@@ -7,7 +7,7 @@ title: Portfolio
 
 I am a Software Engineer and Interaction Designer.
 
-Since December 2020, I am part of the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers).
+Since December 2020, I am an independent consultant in Japan, currently collaborating with the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers).
 
 I am also contributing to the [Chromium](https://chromium.googlesource.com/chromium/src.git) Web browser and collaborating with the [University of Kyoto's CSEAS](https://en.kyoto.cseas.kyoto-u.ac.jp/) as an affiliated researcher.
 
@@ -59,13 +59,19 @@ Internship at IBM Deutschland GmbH. (2006 - 2007)
 
 (Please keep reading to find each of these in the context of its project)
 
-### Igalia: Web platform (2020–present)
+### Erias Co., Ltd.: founder (2022–present)
 
-Since December 2020, I am part of the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers).
+In January 2022 I founded **Erias Co., Ltd.** ([registration details](https://www.houjin-bangou.nta.go.jp/henkorireki-johoto.html?selHouzinNo=2130003007696), [LinkedIn](https://www.linkedin.com/company/erias-co-ltd))., a Japan-based company.
+
+Erias Co., Ltd. provides expert consultancy services on Web standards and technologies, on areas like: active participation in international standards organizations, development and implementation of Web technologies, communication, and formation.
+
+### Web platform (since 2020)
+
+I am currently collaborating with the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers).
 
 Among other things, I am a participant in the [W3C Cascading Style Sheets (CSS) Working Group](https://www.w3.org/Style/CSS/) and co-editor of the Internet-Draft ["Use Cases and Requirements for Web Packages"](https://datatracker.ietf.org/doc/draft-ietf-wpack-use-cases) ([GihHub](https://github.com/wpack-wg/use-cases/)) at the IETF [WPACK Working Group](https://datatracker.ietf.org/wg/wpack/documents/). I am also one of the authors of the explainer and prototypes for the [Bundle Preloading](https://github.com/WICG/bundle-preloading) proposal.
 
-### Chromium Web browser (2020–present)
+### Chromium Web browser (since 2020)
 
 I have been contributing to the Chromium Web browser since the beginning of 2020. This is some of the work that I've done:
 
