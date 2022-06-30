@@ -7,13 +7,11 @@ title: Portfolio
 
 I am a Software Engineer and Interaction Designer.
 
-Since December 2020, I am an independent consultant in Japan, currently collaborating with the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers).
-
-I am also contributing to the [Chromium](https://chromium.googlesource.com/chromium/src.git) Web browser and other Free Software projects.
+Since December 2020, I am part of the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers), an expert consultancy specialised on Free Software. Igalia is internally organized as a workers' cooperative so I have to do my part in the management and decision-making of the company. I also contribute to the [Chromium](https://chromium.googlesource.com/chromium/src.git) Web browser and other Free Software projects.
 
 From 2015 to 2019, I worked at [Terranet AB](http://www.terranet.se/), a Swedish R&D company focused on proximity networks, designing and implementing innovative mobile software that took advantage of next-generation P2P connectivity.
 
-From 2007 to 2014, I worked at [Igalia](http://www.igalia.com/), an expert consultancy specialised on Free SW, where I developed frameworks and applications for mobile and desktop. Igalia is internally organized as a workers' cooperative and I did my part in the management and decision-making of the company.
+From 2007 to 2014, I worked at [Igalia](http://www.igalia.com/), where I developed frameworks and applications for mobile and desktop.
 
 I hold a 5-year degree in SW Engineering at the University of Coruña (Spain, 2006). This was later complemented with a Master in Human-Computer Interaction at the University of York (UK, 2010), which provided me with a solid grasp of the cognitive, methodological and theoretical foundations for user-centred design, as well as a Master on Interaction Design at the University of Malmö (Sweden, 2015), which focused on concept development, iterative prototyping, and embodied interaction.
 
