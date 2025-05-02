@@ -7,7 +7,7 @@ title: Portfolio
 
 I am a Software Engineer and Interaction Designer.
 
-Since December 2020, I am part of the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers), an expert consultancy specialised on Free Software. Igalia is internally organized as a workers' cooperative so I have to do my part in the management and decision-making of the company. I also contribute to the [Chromium](https://chromium.googlesource.com/chromium/src.git) Web browser and other Free Software projects.
+Since December 2020, I am part of the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers), an expert consultancy specialised on Free Software. Igalia is internally organized as a workers' cooperative so I have to do my part in the management and decision-making of the company. I also contribute to the [Wolvic Web browser](https://wolvic.com/) for XR platforms, to the [Chromium Web browser](https://chromium.googlesource.com/chromium/src.git), and to other Free Software projects.
 
 From 2015 to 2019, I worked at [Terranet AB](http://www.terranet.se/), a Swedish R&D company focused on proximity networks, designing and implementing innovative mobile software that took advantage of next-generation P2P connectivity.
 
@@ -42,6 +42,7 @@ Internship at IBM Deutschland GmbH. (2006 - 2007)
 
 ### Free SW contributions
 
+* Contributions to [Wolvic](https://github.com/Igalia/wolvic/commits?author=felipeerias), its [Gecko library](https://github.com/Igalia/wolvic-gecko-patches/commits?author=felipeerias), and its [immersive environments](https://github.com/Igalia/wolvic-3d-environments/commits?author=felipeerias)
 * Contributions to [Chromium](https://chromium.googlesource.com/chromium/src.git)
 * Contributions to [eos-sdk](https://github.com/endlessm/eos-sdk/commits?author=felipeerias)
 * Contributions to [eos-social](https://github.com/endlessm/eos-social/commits?author=felipeerias)
@@ -68,6 +69,14 @@ Erias Co., Ltd. provides expert consultancy services on Web standards and techno
 I am currently collaborating with the [Web Platform team at Igalia](https://www.igalia.com/technology/browsers).
 
 Among other things, I am a participant in the [W3C Cascading Style Sheets (CSS) Working Group](https://www.w3.org/Style/CSS/) and co-editor of the Internet-Draft ["Use Cases and Requirements for Web Packages"](https://datatracker.ietf.org/doc/draft-ietf-wpack-use-cases) ([GihHub](https://github.com/wpack-wg/use-cases/)) at the IETF [WPACK Working Group](https://datatracker.ietf.org/wg/wpack/documents/). I am also one of the authors of the explainer and prototypes for the [Bundle Preloading](https://github.com/WICG/bundle-preloading) proposal.
+
+### Wolvic Web browser for XR platforms (since 2022)
+
+[Wolvic](https://wolvic.com/) is an open source Web browser that supports multiple XR (extended reality) platforms. You can read news and announcements at the [Wolvic blog](https://wolvic.com/blog/). I am one of the main developers, contributing to projects such as:
+
+* [Wolvic](https://github.com/Igalia/wolvic)
+* [Wolvic Gecko patches](https://github.com/Igalia/wolvic-gecko-patches)
+* [Wolvic 3D immersive environments](https://github.com/Igalia/wolvic-3d-environments)
 
 ### Chromium Web browser (since 2020)
 
