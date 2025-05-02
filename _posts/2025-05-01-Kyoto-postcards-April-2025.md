@@ -30,6 +30,6 @@ Photograps taken while walking around Kyoto on spring.
 
 {% include photo.html src="/assets/img/DSCF2799.webp" alt="DSCF2799" title="DSCF2799 title" caption="Room at Nanzen-ji temple." %}
 
-{% include photo.html src="/assets/img/DSCF2800.webp" alt="DSCF2800" title="DSCF2800 title" caption="Courtyard at Nanzen-ji templre." %}
+{% include photo.html src="/assets/img/DSCF2800.webp" alt="DSCF2800" title="DSCF2800 title" caption="Courtyard at Nanzen-ji temple." %}
 
 Fujifilm X-T5, 35mmF2 lens.
