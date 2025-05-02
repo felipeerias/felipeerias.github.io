@@ -1,12 +1,11 @@
 ---
 layout: photography
-title: Kyoto postcards April 2025
+title: Kyoto postcards — April 2025
 date: 2025-05-01
 category: photography
 ---
 
 Photograps taken while walking around Kyoto on spring.
-
 
 {% include photo.html src="/assets/img/DSCF2766.webp" alt="DSCF2766" title="DSCF2766 title" caption="Cherry blossoms." %}
 
@@ -32,4 +31,4 @@ Photograps taken while walking around Kyoto on spring.
 
 {% include photo.html src="/assets/img/DSCF2800.webp" alt="DSCF2800" title="DSCF2800 title" caption="Courtyard at Nanzen-ji temple." %}
 
-Fujifilm X-T5, 35mmF2 lens.
+Fujifilm X-T5, 35mm F2 lens, [Kodak Tri-X 400](https://fujixweekly.com/2020/06/18/fujifilm-x100v-film-simulation-recipe-kodak-tri-x-400/).
