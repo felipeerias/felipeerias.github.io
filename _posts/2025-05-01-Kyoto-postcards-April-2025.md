@@ -5,7 +5,7 @@ date: 2025-05-01
 category: photography
 ---
 
-Photograps taken while walking around Kyoto on spring.
+Photographs taken while walking around Kyoto in spring.
 
 {% include photo.html src="/assets/img/DSCF2766.webp" alt="DSCF2766" title="DSCF2766 title" caption="Cherry blossoms." %}
 
