@@ -1,0 +1,6 @@
+<div class="photo-container">
+  <img src="{{ include.src }}" alt="{{ include.alt }}" title="{{ include.title }}">
+  {% if include.caption %}
+  <div class="photo-caption">{{ include.caption }}</div>
+  {% endif %}
+</div>
