@@ -9,11 +9,11 @@ Photographs taken while walking around Kyoto in spring.
 
 {% include photo.html src="/assets/img/DSCF2766.webp" alt="DSCF2766" title="DSCF2766 title" caption="Cherry blossoms." %}
 
-{% include photo.html src="/assets/img/DSCF2764.webp" alt="DSCF2764" title="DSCF2764 title" caption="People at a canal in the Kawaramachi area." %}
+{% include photo.html src="/assets/img/DSCF2764.webp" alt="DSCF2764" title="DSCF2764 title" caption="People by the canal in the Kawaramachi area." %}
 
 {% include photo.html src="/assets/img/DSCF2771.webp" alt="DSCF2771" title="DSCF2771 title" caption="A cherry tree among the buildings in the Kawaramachi area." %}
 
-{% include photo.html src="/assets/img/DSCF2782.webp" alt="DSCF2782" title="DSCF2782 title" caption="Kamo river, looking towards Sanjo and Gyon." %}
+{% include photo.html src="/assets/img/DSCF2782.webp" alt="DSCF2782" title="DSCF2782 title" caption="Kamo river, looking towards Sanjo and Gion." %}
 
 {% include photo.html src="/assets/img/DSCF2756.webp" alt="DSCF2756" title="DSCF2756 title" caption="Used books seller at Teramachi market" %}
 
