@@ -1,0 +1,3278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The (Updated!) Life of a Pixel</title>
+
+<!--
+  =====================================================================
+  SPEAKER'S NOTES: the narration shown in the Speaker's Notes panel,
+  one header per scene.
+  Edit freely. Each "## N. Title" header starts the text for scene N
+  (the number decides the scene; the title after it is only for you).
+  Markdown supported: paragraphs, **bold**, *italic*, `code`, [links](url).
+  =====================================================================
+-->
+<script type="text/markdown" id="lop-script">
+## 1. The (Updated!) Life of a Pixel
+
+This is one pixel, magnified until you can see the three tiny lights inside it: red, green and blue. Mixed at these strengths, they glow pink. Where did that pink come from? That's what this talk is about.
+
+## 2. One of millions
+
+Zoom out, and our pixel is part of the letter H, in a heading, on an ordinary web page. A 4K screen has more than eight million pixels like it, and the browser may redraw them sixty or more times a second.
+
+## 3. It starts as text
+
+Before there are any pixels, there is only text. The browser receives HTML for structure, CSS for style and JavaScript for behavior, as bytes over the network. Somewhere in these few hundred bytes are the instructions for our pink pixel.
+
+## 4. Processes and threads
+
+The work is split across processes. The browser process handles the interface and the network. Each site gets its own renderer process, with a main thread, in green, and a compositor thread, in amber. The Viz process, in orange, draws with the GPU.
+
+## 5. The pipeline
+
+Here is the route our pixel takes. The main thread parses, styles, lays out and paints: that's the paper side. Commit hands the work to the compositor, and Viz turns it into light. Animate and scroll can run on either thread.
+
+## 6. Tokenize
+
+First, the bytes are decoded into characters, here as UTF-8. Then the tokenizer, a state machine defined by the HTML standard, walks through them and emits tokens: a start tag with its attributes, some text, an end tag.
+
+## 7. Build the DOM
+
+The tree builder turns tokens into nodes. A start tag opens an element, an end tag closes it, and whatever arrives in between becomes its children. The result is the DOM, the Document Object Model: a tree of every element and every run of text.
+
+## 8. The DOM is an API
+
+The DOM isn't just the parser's output; it's a live API. Our script creates a badge and appends it to the body. Rendering follows the DOM, not the HTML. And since scripts share the main thread with rendering, long scripts delay frames.
+
+## 9. Match selectors
+
+Style begins by matching selectors to elements. Rules are sorted into buckets by their rightmost part, so each element only checks a few candidates. A selector like `body .hero` is read right to left: first `.hero`, then its ancestors.
+
+## 10. Resolve the cascade
+
+When several rules set the same property, the cascade picks one winner: origin and importance first, then cascade layers, then specificity, then order of appearance. Here `.hero` beats `h1` on specificity, so the heading is pink. That's our pixel's color.
+
+## 11. Computed style
+
+The result is a computed style for every element: a value for every CSS property, with relative values like 4rem or 0.67em turned into pixels. Blink keeps these in `ComputedStyle` objects, and shares the parts that are identical.
+
+## 12. The layout tree
+
+Layout works on its own tree. Elements that aren't displayed, like `head`, get no layout object. And some boxes appear that aren't in the DOM, like the anonymous block that wraps our inline image and iframe.
+
+## 13. Boxes and constraints
+
+Layout is a conversation. Parents tell children how much space they have: the constraint space. Children lay themselves out and report their size, and the parent positions them. Widths flow down, heights flow up. Reading sizes from script right after a change forces layout early.
+
+## 14. Lines of text
+
+Text needs extra care. Shaping, done by HarfBuzz, turns characters into glyphs from the font, each with an exact position. Then the line breaker finds where lines may break, and fills each line up to the available width.
+
+## 15. The fragment tree
+
+The output of layout is the fragment tree: every box and line, with its final size and position. Fragments are immutable, so they can be cached and reused. One layout object can even produce several fragments, when content splits across columns or pages.
+
+## 16. Property trees
+
+Pre-paint walks the tree and builds four property trees: transforms, clips, effects like opacity, and scrolling. Each piece of content just points at its nodes. So a transform or opacity change can update one node instead of redoing layout and paint.
+
+## 17. Paint order
+
+Paint decides the order things are drawn. Within a stacking context: backgrounds first, then floats, then inline content like text, then outlines. An element with a z-index forms its own stacking context, painted as a unit, and compared only with its siblings.
+
+## 18. The display list
+
+Paint doesn't produce pixels. It records a display list: commands like "draw this rectangle" or "draw these glyphs", grouped into chunks that share the same property tree state. Our pixel's glyph is inside one of these commands.
+
+## 19. Commit
+
+Now the main thread hands off. Commit copies the display list and the property trees to the compositor thread. After that, the main thread is free to run JavaScript again, while the compositor carries on in parallel. From here on, it's light.
+
+## 20. Layerize
+
+Layerize splits the display list into composited layers: pieces the compositor can raster and move on their own. Most content shares one layer. The map shows this step on the compositor thread; today Chromium still runs it on the main thread, just before commit.
+
+## 21. Why some things get layers
+
+Why a layer of its own? Fixed elements move differently when you scroll. Transform and opacity animations can run on the compositor, without the main thread. `will-change` asks for a layer ahead of time. But every layer costs memory, so use them deliberately.
+
+## 22. Tiles
+
+Layers aren't rastered all at once. The compositor cuts them into tiles and prioritizes them: tiles in the viewport now, tiles you're about to scroll to soon, the rest eventually. That's how huge pages stay fast and fit in memory.
+
+## 23. Raster
+
+Raster turns commands into pixels. The compositor sends each tile's work to the Viz process, where Skia, Chrome's graphics library, draws it on the GPU. Images are decoded along the way. This is where our pixel first turns pink.
+
+## 24. Activate
+
+The compositor keeps two trees: a pending tree, where the new commit gets rastered, and an active tree, which is what's on screen. Only when the pending tree's visible tiles are ready does it activate, so you never see half a frame.
+
+## 25. Compositor frames
+
+To show the active tree, the compositor builds a compositor frame: a list of quads, rectangles that say "draw this tile here", grouped into render passes. Effects like a blur get a render pass of their own. The frame is sent to Viz.
+
+## 26. Aggregate
+
+Viz receives frames from many producers: the browser interface, our page, and the cross-site iframe, which runs in its own renderer process. Our page's frame just leaves a slot that says "the iframe goes here". Aggregation stitches them into one frame.
+
+## 27. Draw
+
+Finally, Viz draws. On the GPU, it runs through the aggregated frame and fills a buffer with pixels. At the next display refresh, that buffer is presented, and the screen lights up.
+
+## 28. Back to our pixel
+
+And here we are again. Our pixel is pink because the `.hero` rule won the cascade, because the H glyph covers it, because Skia rastered that glyph into a tile, and because Viz drew that tile on the screen.
+
+## 29. The whole journey
+
+This is the whole journey. On the main thread, text became the DOM, styles, fragments, property trees and a display list. Off the main thread, it became layers, tiles and compositor frames. Then Viz drew the pixels. Every frame, for millions of pixels.
+
+## 30. Thank you and questions
+
+Thank you. This talk builds on Steve Kobes' original Life of a Pixel; his slides are at bit.ly/lifeofapixel. I'm happy to take questions.
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght,BNCE,INFM,SPAC@300..800,-100..100,0..100,0..100&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,100..800&display=swap">
+<style>
+:root {
+  --bg: #04060a;
+  --bar: #070a10;
+  --bar-line: #161d2a;
+  --bar-ink: #d7dce6;
+  --bar-dim: #7d8698;
+  --panel: #070a10;
+  --panel-ink: #dfe4ee;
+  --focus: #8fd6ff;
+  --f-title: 'Unbounded', 'Arial Black', system-ui, sans-serif;
+  --f-hand: 'Shantell Sans', 'Comic Neue', 'Segoe Print', system-ui, sans-serif;
+  --f-mono: 'Martian Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color-scheme: dark;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* The talk is designed for a dark room, so both viewer themes resolve to
+   the same dark chrome; the tokens are kept per theme for the host viewer. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #04060a; --bar: #070a10; --panel: #070a10; }
+}
+:root[data-theme="dark"] { --bg: #04060a; --bar: #070a10; --panel: #070a10; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+html, body { height: 100%; margin: 0; }
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--bar-ink);
+  display: flex; flex-direction: column; overflow: hidden;
+  font-family: var(--f-hand);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+/* ---------- Layout: stage, script panel, control bar ---------- */
+#app { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+#viewport { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; }
+#viewport.anim { transition: transform .5s cubic-bezier(.22, .8, .24, 1); }
+#stage { position: absolute; inset: 0; overflow: hidden; background: #070a10; contain: strict; }
+#world { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; display: block; }
+#grain, #vignette { position: absolute; inset: 0; pointer-events: none; }
+#grain { mix-blend-mode: multiply; opacity: 0; background-size: 256px 256px; }
+#vignette { background: radial-gradient(120% 95% at 50% 46%, rgba(0,0,0,0) 58%, rgba(0,0,0,.34) 100%); }
+#hud, #titles { position: absolute; inset: 0; pointer-events: none; }
+
+#scriptPanel {
+  position: absolute; overflow-y: auto; overscroll-behavior: contain;
+  padding: 16px 22px 18px 20px;
+  background: var(--panel); color: var(--panel-ink);
+  border-left: 3px solid var(--thread, #3a4252);
+  font-family: var(--f-hand); font-variation-settings: "INFM" 0, "BNCE" 0, "SPAC" 0;
+  font-weight: 400; line-height: 1.52; font-size: var(--script-size, 19px);
+  transition: opacity .35s ease, border-color .5s ease;
+  scrollbar-width: thin; scrollbar-color: #2a3343 transparent;
+}
+#scriptPanel.off { opacity: 0; pointer-events: none; }
+/* More text below: fade the bottom edge so the presenter knows to scroll. */
+#scriptPanel.more { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent); }
+#scriptPanel p { margin: 0 0 .6em; max-width: 72ch; }
+#scriptPanel p:last-child { margin-bottom: 0; }
+#scriptPanel code { font-family: var(--f-mono); font-size: .84em; font-stretch: 87.5%; padding: .05em .3em; border-radius: 4px; background: rgba(255,255,255,.07); }
+#scriptPanel a { color: #9fdcff; }
+#scriptText { transition: opacity .2s ease; }
+#scriptText.swap { opacity: 0; }
+#measure { position: absolute; left: -9999px; top: 0; visibility: hidden; }
+
+#bar {
+  flex: 0 0 auto; height: 52px; display: flex; align-items: center; gap: 14px;
+  padding: 0 12px 0 10px; background: var(--bar); border-top: 1px solid var(--bar-line);
+  position: relative; z-index: 2; font-family: var(--f-mono); font-stretch: 87.5%;
+}
+.btn {
+  appearance: none; border: 1px solid transparent; background: transparent; color: var(--bar-ink);
+  height: 38px; min-width: 40px; border-radius: 8px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 10px;
+  font: 500 13px var(--f-mono); font-stretch: 87.5%;
+}
+.btn:hover { background: rgba(255,255,255,.06); }
+.btn:disabled { opacity: .3; cursor: default; background: transparent; }
+.btn svg { width: 20px; height: 20px; display: block; }
+.btn .sw { width: 28px; height: 16px; border-radius: 8px; background: #252d3b; position: relative; transition: background .25s; }
+.btn .sw::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #9aa3b3; transition: transform .25s, background .25s; }
+.btn[aria-pressed="true"] .sw { background: #3a4456; }
+.btn[aria-pressed="true"] .sw::after { transform: translateX(12px); background: #eef1f6; }
+#ticks { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 0; height: 100%; }
+.grp { display: flex; flex-direction: column; align-items: stretch; gap: 3px; }
+.grp .lbl { font-size: 10.5px; letter-spacing: .02em; color: var(--bar-dim); text-align: left; white-space: nowrap; line-height: 1; transition: color .3s; }
+.grp.on .lbl { color: var(--bar-ink); }
+.grp .row { display: flex; gap: 3px; }
+.tick { appearance: none; border: 0; background: transparent; padding: 0; cursor: pointer; width: 21px; height: 24px; display: flex; align-items: center; }
+.tick i { display: block; width: 100%; height: 4px; border-radius: 2px; background: var(--c); opacity: .22; transition: opacity .3s, height .3s; }
+.tick.past i { opacity: .62; }
+.tick.now i { opacity: 1; height: 10px; box-shadow: 0 0 10px var(--c); }
+.tick:hover i { opacity: .9; }
+#where { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; min-width: 0; }
+#counter { font-size: 13px; color: var(--bar-ink); font-variant-numeric: tabular-nums; }
+#chapter { font-size: 12px; color: var(--bar-dim); }
+@media (max-width: 1100px) { .grp .lbl { display: none; } .tick { width: 12px; } }
+@media (max-width: 760px) { #chapter, .btn .lbl { display: none; } #bar { gap: 8px; } .tick { width: 8px; } .grp .row { gap: 2px; } #ticks { gap: 5px; } }
+@media (max-width: 460px) { #ticks { display: none; } #bar { justify-content: space-between; } }
+
+/* ---------- Titles (inside the stage, 1600 x 900 coordinates) ---------- */
+.tb { position: absolute; left: 64px; top: 34px; right: 64px; height: 118px; }
+.tb .head { display: flex; align-items: baseline; gap: 18px; }
+.tb .num { font: 500 18px var(--f-mono); font-stretch: 87.5%; letter-spacing: .02em; min-width: 30px; }
+.tb .mask { overflow: hidden; padding: 4px 0 8px; margin: -4px 0 -8px; }
+.tb h2 { margin: 0; font: 600 46px/1.05 var(--f-title); letter-spacing: -.022em; white-space: nowrap; }
+.tb h2 .ch { display: inline-block; white-space: pre; }
+.tb .sub { margin: 8px 0 0 48px; font: 400 23px/1.25 var(--f-hand); font-variation-settings: "INFM" 35, "BNCE" 0; }
+.tb .chips { position: absolute; right: 0; top: 6px; display: flex; gap: 10px; }
+.chip { display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px 7px 12px; border-radius: 999px; font: 500 15px var(--f-mono); font-stretch: 87.5%; border: 1.5px solid var(--c); color: var(--c); background: rgba(0,0,0,.0); white-space: nowrap; }
+.chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.tb.dark { color: #eef1f7; }
+.tb.dark .sub { color: #98a2b6; }
+.tb.dark .chip { background: rgba(8, 11, 17, .72); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 30%, transparent); }
+.tb.dark .chip i { box-shadow: 0 0 8px var(--c); }
+.tb.paper { color: #2c2e33; }
+.tb.paper .sub { color: #5d6169; }
+.tb.paper .chip { background: rgba(237, 236, 230, .8); }
+.tb.hero { left: 0; right: 0; top: 596px; text-align: center; height: auto; }
+.tb.hero .head { justify-content: center; }
+.tb.hero h2 { font-size: 70px; letter-spacing: -.03em; font-weight: 700; }
+.tb.hero .sub { margin: 18px 0 0; font-size: 30px; color: #b3bccd; font-variation-settings: "INFM" 80, "BNCE" 20; }
+.tb.end { left: 0; right: 0; top: 300px; text-align: center; height: auto; }
+.tb.end .head { justify-content: center; }
+.tb.end h2 { font-size: 104px; font-weight: 700; letter-spacing: -.035em; }
+.tb.end .sub { margin: 20px 0 0; font-size: 38px; color: #b3bccd; font-variation-settings: "INFM" 80, "BNCE" 20; }
+
+/* ---------- HUD (screen space, inside the stage) ---------- */
+.hud-read { position: absolute; left: 56px; bottom: 22px; padding: 5px 9px; border-radius: 7px; background: rgba(7, 10, 16, .72); font: 400 15px var(--f-mono); font-stretch: 87.5%; color: #6f7a8f; letter-spacing: .02em; white-space: pre; font-variant-numeric: tabular-nums; }
+.hud-tag { position: absolute; font: 500 18px var(--f-mono); padding: 4px 9px; border-radius: 7px; background: rgba(7, 10, 16, .6); font-stretch: 87.5%; white-space: pre; color: #dfe5f0; }
+.hud-tag.dim { color: #8a94a8; font-weight: 400; }
+.hud-bar { position: absolute; height: 6px; border-radius: 3px; }
+
+/* ---------- Credit layer (scene 30): outside the hidden stage ---------- */
+#credit { position: absolute; left: 0; top: 646px; width: 1600px; text-align: center; visibility: hidden; opacity: 0; font-family: var(--f-hand); font-variation-settings: "INFM" 30, "BNCE" 0; }
+#credit p { margin: 0; font-size: 26px; color: #c5cddb; }
+#credit p + p { margin-top: 10px; }
+#credit a { color: #eef2f8; text-decoration-color: rgba(255, 46, 136, .8); text-decoration-thickness: 2px; text-underline-offset: 5px; }
+#credit a:hover { color: #fff; text-decoration-color: #ff2e88; }
+#credit .short { font: 500 24px var(--f-mono); font-stretch: 87.5%; letter-spacing: .01em; }
+#credit .short a { color: #ff5aa2; text-decoration: none; border-bottom: 1.5px solid rgba(255, 90, 162, .45); }
+
+/* ---------- Loading ---------- */
+#loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); z-index: 9; transition: opacity .5s ease; }
+#loading i { width: 14px; height: 14px; background: #ff2e88; box-shadow: 0 0 24px #ff2e88; }
+#loading.done { opacity: 0; pointer-events: none; }
+
+/* ---------- SVG text classes (world units) ---------- */
+.hand { font-family: var(--f-hand); font-variation-settings: "INFM" 70, "BNCE" 12; font-weight: 500; }
+.mono { font-family: var(--f-mono); font-stretch: 87.5%; }
+.titlef { font-family: var(--f-title); }
+.page { font-family: Georgia, 'Times New Roman', Times, 'Liberation Serif', 'DejaVu Serif', serif; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="viewport">
+    <div id="stage" aria-hidden="true">
+      <svg id="world" xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900"></svg>
+      <div id="grain"></div>
+      <div id="vignette"></div>
+      <div id="hud"></div>
+      <div id="titles"></div>
+    </div>
+    <div id="credit">
+      <p>Inspired by <a href="https://bit.ly/lifeofapixel" target="_blank" rel="noopener">&ldquo;Life of a Pixel&rdquo; by Steve Kobes</a></p>
+      <p class="short"><a href="https://bit.ly/lifeofapixel" target="_blank" rel="noopener">bit.ly/lifeofapixel</a></p>
+    </div>
+  </div>
+  <aside id="scriptPanel" aria-hidden="true"><div id="scriptText"></div></aside>
+  <div id="measure" aria-hidden="true"></div>
+</div>
+<nav id="bar" aria-label="Presentation controls">
+  <button id="btnScript" class="btn" type="button" aria-pressed="true" aria-label="Speaker&rsquo;s Notes" title="Show or hide the speaker&rsquo;s notes (S)">
+    <span class="sw" aria-hidden="true"></span><span class="lbl">Speaker&rsquo;s Notes</span>
+  </button>
+  <div id="ticks"></div>
+  <div id="where"><span id="counter">1 / 30</span><span id="chapter"></span></div>
+  <button id="btnPrev" class="btn" type="button" aria-label="Previous scene" title="Previous scene (Left arrow)">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button id="btnNext" class="btn" type="button" aria-label="Next scene" title="Next scene (Right arrow or Space)">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+</nav>
+<div id="live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div id="loading" aria-hidden="true"><i></i></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/DrawSVGPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/CustomEase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<script>
+(async function () {
+'use strict';
+/* =====================================================================
+   2. SCENE DATA
+   One entry per scene: on-screen title, subtitle, chapter, mode and the
+   threads it runs on. The narration lives in the Markdown block above.
+   mode: 'dark' (pixels and GPU work) | 'paper' (main-thread data) |
+         'split' (paper title, dark chips; the commit scene straddles both)
+   threads: chips shown at the top right; 'main' | 'comp' | 'viz'
+   ===================================================================== */
+const SCENES = [
+  { title: 'The (Updated!) Life of a Pixel', sub: 'an experiment by Felipe Erias', chapter: 'Intro', mode: 'dark', tick: 'none', hero: true },
+  { title: 'One of millions', sub: 'Every pixel gets its color the same way', chapter: 'Intro', mode: 'dark', tick: 'none' },
+  { title: 'It starts as text', sub: 'HTML, CSS and JavaScript arrive as bytes', chapter: 'Intro', mode: 'dark', tick: 'source' },
+  { title: 'Processes and threads', sub: 'Who does the work, and where it runs', chapter: 'Intro', mode: 'dark', tick: 'none' },
+  { title: 'The pipeline', sub: 'The route from text to light', chapter: 'Intro', mode: 'dark', tick: 'none' },
+  { title: 'Tokenize', sub: 'Bytes become characters, then tokens', chapter: 'Parse', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'Build the DOM', sub: 'Tokens become a tree', chapter: 'Parse', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'The DOM is an API', sub: 'JavaScript can change the tree at any time', chapter: 'Parse', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'Match selectors', sub: 'Which rules apply to which elements', chapter: 'Style', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'Resolve the cascade', sub: 'One winner for every property', chapter: 'Style', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'Computed style', sub: 'A final value for every property', chapter: 'Style', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'The layout tree', sub: 'Boxes for everything that will be displayed', chapter: 'Layout', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'Boxes and constraints', sub: 'Available space flows down, sizes flow back up', chapter: 'Layout', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'Lines of text', sub: 'Shaping and line breaking', chapter: 'Layout', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'The fragment tree', sub: 'Every box and line, with its final geometry', chapter: 'Layout', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'Property trees', sub: 'Pre-paint factors out transforms, clips, effects and scrolling', chapter: 'Paint', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'Paint order', sub: 'Stacking contexts and paint phases', chapter: 'Paint', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'The display list', sub: 'Drawing commands, not pixels', chapter: 'Paint', mode: 'paper', tick: 'main', threads: ['main'] },
+  { title: 'Commit', sub: 'The main thread hands off to the compositor', chapter: 'Composite', mode: 'split', tick: 'comp', threads: ['main', 'comp'] },
+  { title: 'Layerize', sub: 'The display list splits into composited layers', chapter: 'Composite', mode: 'dark', tick: 'comp', threads: ['comp'] },
+  { title: 'Why some things get layers', sub: 'Fixed positioning, animations and will-change', chapter: 'Composite', mode: 'dark', tick: 'comp', threads: ['comp'] },
+  { title: 'Tiles', sub: 'Raster only what is needed, nearest first', chapter: 'Raster', mode: 'dark', tick: 'comp', threads: ['comp'] },
+  { title: 'Raster', sub: 'Commands become pixels on the GPU', chapter: 'Raster', mode: 'dark', tick: 'comp', threads: ['comp', 'viz'] },
+  { title: 'Activate', sub: 'The new tree goes live only when it is ready', chapter: 'Raster', mode: 'dark', tick: 'comp', threads: ['comp'] },
+  { title: 'Compositor frames', sub: 'Quads and render passes', chapter: 'Display', mode: 'dark', tick: 'comp', threads: ['comp'] },
+  { title: 'Aggregate', sub: 'Frames from every process become one', chapter: 'Display', mode: 'dark', tick: 'viz', threads: ['viz'] },
+  { title: 'Draw', sub: 'Pixels, at last', chapter: 'Display', mode: 'dark', tick: 'viz', threads: ['viz'] },
+  { title: 'Back to our pixel', sub: 'Now we know where the pink comes from', chapter: 'Wrap-up', mode: 'dark', tick: 'none' },
+  { title: 'The whole journey', sub: 'Every stage, and what it produced', chapter: 'Wrap-up', mode: 'dark', tick: 'none' },
+  { title: 'Thank you', sub: 'Questions?', chapter: 'Wrap-up', mode: 'dark', tick: 'none', end: true }
+];
+const COUNT = SCENES.length;
+
+/* =====================================================================
+   3. CONSTANTS AND PALETTE
+   ===================================================================== */
+gsap.registerPlugin(DrawSVGPlugin, CustomEase);
+
+const W = 1600, H = 900, AR = H / W;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Color means where code runs. Each role has a light (dark mode) and a
+   pencil (paper mode) form. Never use these decoratively. */
+const C = {
+  desk: '#070a10', deskDot: '#1b2536',
+  ink: '#e9edf5', dim: '#8c96aa', faint: '#2a3246', line: '#3b465c',
+  paper: '#edece6', paperShade: '#e3e1d8', grid: '#8fb2c8',
+  lead: '#3b3d42', leadMid: '#6b6e76', leadLight: '#9a9da4',
+  main: '#46e08a', mainP: '#2c9a5a',
+  comp: '#ffc53d', compP: '#c7920f',
+  viz: '#ff7a35', vizP: '#dc6428',
+  src: '#5cd6ff', srcP: '#2e86c2',
+  pink: '#ff2e88', pinkP: '#dc2f7b',
+  sub: ['#ff3b3b', '#35f06a', '#3b7bff']
+};
+const THREAD = {
+  main: { dark: C.main, paper: C.mainP, label: 'main thread' },
+  comp: { dark: C.comp, paper: C.compP, label: 'compositor thread' },
+  viz: { dark: C.viz, paper: C.vizP, label: 'Viz process' }
+};
+const TICK = { none: '#8c96aa', source: C.src, main: C.main, comp: C.comp, viz: C.viz };
+
+/* One motion vocabulary for all 30 scenes. */
+const E = {
+  cam: CustomEase.create('cam', 'M0,0 C0.4,0 0.14,1 1,1'),
+  zoom: CustomEase.create('zoom', 'M0,0 C0.5,0 0.3,1 1,1'),
+  out: 'power3.out', in: 'power2.in', io: 'power2.inOut',
+  draw: 'power1.inOut', pop: 'back.out(1.6)', soft: 'sine.inOut', lin: 'none'
+};
+const D = { xs: 0.25, s: 0.45, m: 0.8, l: 1.3, draw: 0.9 };
+
+/* =====================================================================
+   World layout, in layout units (1 unit = 1 stage px at zoom 1).
+   The top band holds the context scenes; the paper sheet holds the main
+   thread; everything right of the paper edge is compositor and Viz.
+   ===================================================================== */
+const L = {
+  topY: 450,                       /* centre line of the top band */
+  T: { cx: 900, cy: 450 },         /* source text */
+  P: { cx: 2900, cy: 450 },        /* processes and threads */
+  S: { cx: 11900, cy: 430 },       /* the monitor */
+  paper: { x0: -1000, y0: 1150, x1: 7240, y1: 6560 },
+  spineX: 180, runY: 6380, rspineX: 12950,
+  rows: { parse: 1880, style: 3180, layout: 4480, paint: 5780 },
+  edge: 7240,
+  ds: { ds1: 5780, ds2: 4480, ds3: 3180 }
+};
+
+/* The example page, in CSS px. Viewport 1920 x 1000 below an 80 px browser
+   interface, on a 3840 x 2160 display at device pixel ratio 2. */
+const PAGE = {
+  dpr: 2, ui: 80, vw: 1920, vh: 1000, devW: 3840, devH: 2160,
+  bg: '#ffffff', text: '#1d1f24',
+  header: { x: 0, y: 0, w: 1920, h: 19, text: 'pixel.blog' },
+  body: { x: 640, y: 48, w: 640 },
+  h1: { x: 640, y: 48, w: 640, h: 77, size: 64, base: 109, text: 'Hello, pixel' },
+  p: { x: 640, y: 168, w: 640, h: 38, size: 16, text: 'Every pixel on this screen has a story. This one starts as a few bytes of text, travels through the whole browser, and ends as light.', lines: [] },
+  anon: { x: 640, y: 222, w: 640, h: 164 },
+  img: { x: 640, y: 222, w: 240, h: 160 },
+  iframe: { x: 884, y: 228, w: 300, h: 154 },
+  badge: { x: 1233, y: 386, w: 47, h: 23, r: 12, pad: 10, bg: '#2563eb', fg: '#ffffff', text: 'new' }
+};
+const PX_UNIT = 0.4;               /* world units per device pixel on the monitor */
+
+const SRC_HTML = [
+  '<!DOCTYPE html>',
+  '<html>',
+  '<head>',
+  '  <link rel="stylesheet" href="style.css">',
+  '  <script src="app.js" defer><\/script>',
+  '</head>',
+  '<body>',
+  '  <header>pixel.blog</header>',
+  '  <h1 class="hero">Hello, pixel</h1>',
+  '  <p>Every pixel on this screen has a story.',
+  '     This one starts as a few bytes of text,',
+  '     travels through the whole browser,',
+  '     and ends as light.</p>',
+  '  <img src="sunset.jpg">',
+  '  <iframe src="https://maps.example"></iframe>',
+  '</body>',
+  '</html>'
+];
+const SRC_CSS = [
+  'body   { max-width: 40rem; margin: 3rem auto; }',
+  'header { position: fixed; top: 0; left: 0; right: 0; }',
+  'h1     { color: black; font-size: 4rem; }',
+  '.hero  { color: #ff2e88; }',
+  'img    { will-change: transform; }',
+  '.badge { margin-left: auto; width: fit-content;',
+  '         padding: 2px 10px; border-radius: 12px;',
+  '         background: #2563eb; color: white;',
+  '         animation: pulse 1s infinite; }',
+  '@keyframes pulse { 50% { opacity: 0.3; } }'
+];
+const SRC_JS = [
+  'const badge = document.createElement("div");',
+  'badge.className = "badge";',
+  'badge.textContent = "new";',
+  'document.body.append(badge);'
+];
+const HERO_RGB = [255, 46, 136];
+
+/* =====================================================================
+   4. HELPERS
+   ===================================================================== */
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const fmt = (v, d) => (+v).toFixed(d === undefined ? 1 : d);
+
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function g(parent, attrs) { return el('g', attrs, parent); }
+function hdiv(parent, cls, css, html) {
+  const d = document.createElement('div');
+  if (cls) d.className = cls;
+  if (css) d.style.cssText = css;
+  if (html !== undefined) d.innerHTML = html;
+  if (parent) parent.appendChild(d);
+  return d;
+}
+
+/* Seeded randomness: nothing in the talk uses Math.random. */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rnd = mulberry32(20260928);
+function hash01(i, j) {
+  let h = Math.imul(i + 1, 374761393) ^ Math.imul(j + 7, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/* ---------- Text measurement (fonts are loaded before building) ---------- */
+const mctx = document.createElement('canvas').getContext('2d');
+const FONT = {
+  hand: (s, w) => (w || 500) + ' ' + s + 'px "Shantell Sans"',
+  mono: (s, w) => 'semi-condensed ' + (w || 400) + ' ' + s + 'px "Martian Mono"',
+  title: (s, w) => (w || 600) + ' ' + s + 'px Unbounded'
+};
+function textW(str, font) { mctx.font = font; return mctx.measureText(str).width; }
+/* Fonts must be ready before anything is measured or rastered. */
+await Promise.race([
+  Promise.all([
+    '600 40px Unbounded', '700 40px Unbounded', '400 20px "Shantell Sans"', '500 20px "Shantell Sans"',
+    'semi-condensed 400 20px "Martian Mono"', 'semi-condensed 500 20px "Martian Mono"', 'semi-condensed 600 20px "Martian Mono"'
+  ].map(f => document.fonts.load(f).catch(() => null))),
+  new Promise(r => setTimeout(r, 4000))
+]);
+/* Advance per em for Martian Mono at 87.5% width, measured as SVG renders it
+   (canvas measurement ignores the width axis). */
+const MONO_ADV = (function () {
+  const probe = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  probe.setAttribute('class', 'mono'); probe.setAttribute('font-size', '100'); probe.textContent = 'MMMMMMMMMM';
+  document.getElementById('world').appendChild(probe);
+  const v = probe.getComputedTextLength() / 1000;
+  probe.remove();
+  return v > 0.3 && v < 1 ? v : 0.6;
+})();
+
+/* SVG text. o: { size, fill, cls, anchor, weight, op, ls, id } */
+function stext(parent, x, y, str, o) {
+  o = o || {};
+  const t = el('text', {
+    x: x, y: y, 'font-size': o.size || 22, fill: o.fill || C.lead,
+    'text-anchor': o.anchor, 'font-weight': o.weight, opacity: o.op,
+    'letter-spacing': o.ls, class: o.cls || 'hand', 'dominant-baseline': o.base
+  }, parent);
+  t.textContent = str;
+  return t;
+}
+const hand = (p, x, y, s, o) => stext(p, x, y, s, Object.assign({ cls: 'hand' }, o));
+const mono = (p, x, y, s, o) => stext(p, x, y, s, Object.assign({ cls: 'mono' }, o));
+
+/* Syntax-colored code lines as SVG text with tspans. kind: html | css | js */
+function tokenize(line, kind) {
+  const out = [];
+  const push = (t, c) => { if (t) out.push({ t: t, c: c }); };
+  let re;
+  if (kind === 'html') re = /(<\/?)([a-zA-Z0-9!]+)|(\s[a-z-]+)(=)("[^"]*")|(>)|([^<>]+)/g;
+  else if (kind === 'css') re = /(@[a-z-]+)|([.#]?[a-z][a-z0-9-]*)(\s*\{)|([a-z-]+)(:)|(#[0-9a-f]{3,6}|[0-9.]+[a-z%]*)|([{};])|(\s+)|([^\s{};:]+)/gi;
+  else re = /("[^"]*")|\b(const|let|new|function)\b|([a-zA-Z_]+)(?=\()|([.=();,])|(\s+)|([a-zA-Z_]+)/g;
+  let m, last = 0;
+  while ((m = re.exec(line))) {
+    if (m.index > last) push(line.slice(last, m.index), 'p');
+    if (kind === 'html') {
+      if (m[1]) { push(m[1], 'p'); push(m[2], 'tag'); }
+      else if (m[3]) { push(m[3], 'attr'); push(m[4], 'p'); push(m[5], 'str'); }
+      else if (m[6]) push(m[6], 'p');
+      else push(m[7], 'txt');
+    } else if (kind === 'css') {
+      if (m[1]) push(m[1], 'kw');
+      else if (m[2]) { push(m[2], 'sel'); push(m[3], 'p'); }
+      else if (m[4]) { push(m[4], 'prop'); push(m[5], 'p'); }
+      else if (m[6]) push(m[6], 'num');
+      else if (m[7]) push(m[7], 'p');
+      else if (m[8]) push(m[8], 'p');
+      else push(m[9], 'val');
+    } else {
+      if (m[1]) push(m[1], 'str');
+      else if (m[2]) push(m[2], 'kw');
+      else if (m[3]) push(m[3], 'fn');
+      else if (m[4]) push(m[4], 'p');
+      else if (m[5]) push(m[5], 'p');
+      else push(m[6], 'id');
+    }
+    last = re.lastIndex;
+  }
+  if (last < line.length) push(line.slice(last), 'p');
+  return out;
+}
+const CODE_DARK = { p: '#7fa6bd', tag: '#5cd6ff', attr: '#8fe3ff', str: '#c8f1ff', txt: '#e9f8ff', sel: '#5cd6ff', prop: '#8fe3ff', num: '#c8f1ff', val: '#c8f1ff', kw: '#5cd6ff', fn: '#8fe3ff', id: '#e9f8ff' };
+const CODE_PAPER = { p: '#7b7f87', tag: '#2d6f9f', attr: '#3b3d42', str: '#2e86c2', txt: '#3b3d42', sel: '#2d6f9f', prop: '#3b3d42', num: '#2e86c2', val: '#2e86c2', kw: '#2d6f9f', fn: '#3b3d42', id: '#3b3d42' };
+function codeBlock(parent, x, y, lines, kind, o) {
+  o = o || {};
+  const size = o.size || 20, lh = o.lh || size * 1.55, pal = o.pal || CODE_DARK;
+  const grp = g(parent, { class: 'code' });
+  const rows = lines.map((ln, i) => {
+    const t = el('text', { x: x, y: y + i * lh, 'font-size': size, class: 'mono', style: 'white-space: pre' }, grp);
+    tokenize(ln, kind).forEach(tok => {
+      const s = el('tspan', { fill: pal[tok.c] || pal.p }, t);
+      s.textContent = tok.t;
+    });
+    return t;
+  });
+  return { g: grp, rows: rows, lh: lh, size: size, adv: size * MONO_ADV };
+}
+
+/* =====================================================================
+   Derived renderers. Some visual state is a pure function of numbers
+   that the timeline tweens (camera, scrambled labels, counters, 3D
+   poses). Tweens change plain proxy objects; renderAll() writes the DOM
+   once per frame, and again after every seek. Seeks never skip them.
+   ===================================================================== */
+const RENDER = [];
+function addRenderer(fn) { RENDER.push(fn); }
+function renderAll() { for (let i = 0; i < RENDER.length; i++) RENDER[i](); }
+
+/* Deterministic scramble: characters resolve left to right from a fixed
+   glyph set, driven by one proxy value p in [0, 1]. */
+const SCR_SET = '01<>/{}[]#=+*$%&ABCDEFHKLMNPRSTXZ';
+function scrambler(node, finalText, o) {
+  o = o || {};
+  const prox = { p: o.p0 === undefined ? 0 : o.p0 };
+  const from = o.from || '';
+  let last = null;
+  addRenderer(() => {
+    const p = prox.p;
+    if (p === last) return;
+    last = p;
+    if (p <= 0) { node.textContent = from; return; }
+    if (p >= 1) { node.textContent = finalText; return; }
+    const n = finalText.length;
+    let s = '';
+    for (let i = 0; i < n; i++) {
+      const ch = finalText[i];
+      const start = (i / Math.max(1, n)) * 0.62;
+      const lock = start + 0.3 + 0.08 * hash01(i, 3);
+      if (ch === ' ') { s += ' '; continue; }
+      if (p >= lock) s += ch;
+      else if (p >= start) s += SCR_SET[Math.floor(hash01(i, Math.floor(p * 40)) * SCR_SET.length)];
+      else s += (from[i] !== undefined ? from[i] : '');
+    }
+    node.textContent = s;
+  });
+  return prox;
+}
+/* Number counter driven by a proxy. */
+function counter(node, a, b, fmtFn) {
+  const prox = { v: a };
+  let last = null;
+  addRenderer(() => {
+    if (prox.v === last) return;
+    last = prox.v;
+    node.textContent = fmtFn(prox.v);
+  });
+  return prox;
+}
+const grouped = v => Math.round(v).toLocaleString('en-US');
+
+/* ---------- Timeline helpers ---------- */
+const tl = gsap.timeline({ paused: true, defaults: { ease: E.io } });
+
+/* Pencil and neon strokes start undrawn (gsap.set at creation); draw()
+   draws them on. */
+function draw(els, at, dur, stagger, ease) {
+  if (!els || (Array.isArray(els) && !els.length)) return;
+  tl.to(els, { drawSVG: '100%', duration: dur || D.draw, stagger: stagger || 0, ease: ease || E.draw }, at);
+}
+/* Stagger per shape (a shape may have several strokes). */
+function drawEach(shapes, at, dur, stagger, ease) {
+  shapes.forEach((sh, i) => draw(sh.strokes || sh, at + i * (stagger || 0), dur, 0, ease));
+}
+function undraw(els, at, dur, stagger) {
+  tl.to(els, { drawSVG: '100% 100%', duration: dur || D.s, stagger: stagger || 0, ease: E.in }, at);
+}
+function fadeIn(els, at, dur, o) {
+  tl.to(els, Object.assign({ autoAlpha: 1, duration: dur || D.s, ease: E.out }, o), at);
+}
+function fadeOut(els, at, dur, o) {
+  tl.to(els, Object.assign({ autoAlpha: 0, duration: dur || D.s, ease: E.in }, o), at);
+}
+function hide(els) { gsap.set(els, { autoAlpha: 0 }); }
+
+/* Hand lettering "writes on": a clip rect grows left to right. */
+/* Greedy line breaking at spaces, as a line breaker would for this text. */
+function breakLines(text, font, width) {
+  const words = text.split(' '), lines = [];
+  let cur = '';
+  words.forEach(w => {
+    const cand = cur ? cur + ' ' + w : w;
+    if (cur && textW(cand, font) > width) { lines.push(cur); cur = w; } else cur = cand;
+  });
+  if (cur) lines.push(cur);
+  return lines;
+}
+let CLIP_ID = 0;
+function writable(textNode, o) {
+  const id = 'wc' + (CLIP_ID++);
+  /* Bounding-box units: the clip always spans the text as rendered, at any
+     scale. (Chrome lays SVG text out at its on-screen size, so a width
+     measured once can be wrong after the stage is scaled.) */
+  const cp = el('clipPath', { id: id, clipPathUnits: 'objectBoundingBox' }, DEFS);
+  const r = el('rect', { x: -0.04, y: -0.3, width: 0, height: 1.6 }, cp);
+  textNode.setAttribute('clip-path', 'url(#' + id + ')');
+  textNode.__clip = { r: r, w: 1.08 };
+  return textNode;
+}
+/* Kept for the call at the top of the timeline; bounding-box clips need no measuring. */
+function measureWritables() {}
+function write(nodes, at, dur, stagger) {
+  nodes = [].concat(nodes);
+  nodes.forEach((n, i) => {
+    tl.to(n.__clip.r, { attr: { width: n.__clip.w }, duration: dur || 0.55, ease: 'power1.inOut' }, at + i * (stagger || 0));
+  });
+}
+function unwrite(nodes, at, dur) {
+  [].concat(nodes).forEach(n => tl.to(n.__clip.r, { attr: { width: 0 }, duration: dur || 0.3, ease: E.in }, at));
+}
+
+/* ---------- Pencil: seeded Rough.js strokes, drawn on with DrawSVG ---------- */
+const RG = rough.generator();
+let SEED = 101;
+const PEN = { roughness: 0.85, bowing: 0.75, strokeWidth: 1.7, stroke: C.lead, hachureGap: 6.5, hachureAngle: -41, fillWeight: 1.05, curveStepCount: 7 };
+
+function penEls(parent, drawable, o) {
+  const grp = g(parent, { class: 'pen', opacity: o.op });
+  const strokes = [];
+  RG.toPaths(drawable).forEach(p => {
+    const solid = p.fill && p.fill !== 'none';
+    const e = el('path', {
+      d: p.d, fill: solid ? p.fill : 'none', stroke: solid ? 'none' : p.stroke,
+      'stroke-width': p.strokeWidth, 'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+    }, grp);
+    if (!solid) strokes.push(e);
+  });
+  /* Outline passes first, hatching after, so the hand draws edges first. */
+  const hatch = strokes.filter(e => +e.getAttribute('stroke-width') < (o.strokeWidth || PEN.strokeWidth) * 0.99);
+  const outline = strokes.filter(e => hatch.indexOf(e) < 0);
+  grp.strokes = outline.concat(hatch);
+  if (!o.drawn) gsap.set(grp.strokes, { drawSVG: '0%' });
+  return grp;
+}
+function penOpts(o) { return Object.assign({}, PEN, o || {}, { seed: SEED++ }); }
+const P = {
+  rect: (p, x, y, w, h, o) => penEls(p, RG.rectangle(x, y, w, h, penOpts(o)), o || {}),
+  line: (p, x1, y1, x2, y2, o) => penEls(p, RG.line(x1, y1, x2, y2, penOpts(o)), o || {}),
+  poly: (p, pts, o) => penEls(p, (o && o.closed ? RG.polygon : RG.linearPath).call(RG, pts, penOpts(o)), o || {}),
+  curve: (p, pts, o) => penEls(p, RG.curve(pts, penOpts(o)), o || {}),
+  ellipse: (p, cx, cy, w, h, o) => penEls(p, RG.ellipse(cx, cy, w, h, penOpts(o)), o || {}),
+  path: (p, d, o) => penEls(p, RG.path(d, penOpts(o)), o || {}),
+  /* A straight arrow: shaft, then the two strokes of the head. */
+  arrow: (p, x1, y1, x2, y2, o) => {
+    o = o || {};
+    const grp = g(p);
+    const shaft = P.line(grp, x1, y1, x2, y2, o);
+    const a = Math.atan2(y2 - y1, x2 - x1), hl = o.head || 13;
+    const h1 = P.line(grp, x2, y2, x2 - hl * Math.cos(a - 0.45), y2 - hl * Math.sin(a - 0.45), Object.assign({}, o, { roughness: 0.5 }));
+    const h2 = P.line(grp, x2, y2, x2 - hl * Math.cos(a + 0.45), y2 - hl * Math.sin(a + 0.45), Object.assign({}, o, { roughness: 0.5 }));
+    grp.strokes = shaft.strokes.concat(h1.strokes, h2.strokes);
+    return grp;
+  },
+  /* A curved arrow through points (Catmull-Rom by Rough.js). */
+  carrow: (p, pts, o) => {
+    o = o || {};
+    const grp = g(p);
+    const body = P.curve(grp, pts, o);
+    const n = pts.length, b = pts[n - 1], a0 = pts[n - 2];
+    const a = Math.atan2(b[1] - a0[1], b[0] - a0[0]), hl = o.head || 13;
+    const h1 = P.line(grp, b[0], b[1], b[0] - hl * Math.cos(a - 0.45), b[1] - hl * Math.sin(a - 0.45), Object.assign({}, o, { roughness: 0.5 }));
+    const h2 = P.line(grp, b[0], b[1], b[0] - hl * Math.cos(a + 0.45), b[1] - hl * Math.sin(a + 0.45), Object.assign({}, o, { roughness: 0.5 }));
+    grp.strokes = body.strokes.concat(h1.strokes, h2.strokes);
+    return grp;
+  }
+};
+/* Collect strokes from several pencil groups, in order. */
+const strokesOf = (...gs) => [].concat(...gs.map(x => (x && x.strokes) || []));
+
+/* ---------- Light: a core stroke with two halos, no blur filters ---------- */
+function rrPath(x, y, w, h, r) {
+  r = Math.min(r || 0, w / 2, h / 2);
+  if (!r) return 'M' + x + ' ' + y + 'H' + (x + w) + 'V' + (y + h) + 'H' + x + 'Z';
+  return 'M' + (x + r) + ' ' + y + 'H' + (x + w - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (x + w) + ' ' + (y + r) +
+    'V' + (y + h - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (x + w - r) + ' ' + (y + h) +
+    'H' + (x + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + x + ' ' + (y + h - r) +
+    'V' + (y + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (x + r) + ' ' + y + 'Z';
+}
+function neonEls(parent, d, color, o) {
+  o = o || {};
+  const grp = g(parent, { class: 'neon', opacity: o.op });
+  const base = { d: d, fill: 'none', stroke: color, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-dasharray': o.dash };
+  const els = [];
+  if (!o.noHalo) {
+    els.push(el('path', Object.assign({}, base, { 'stroke-width': (o.w || 1.8) * 5.5, opacity: 0.06 }), grp));
+    els.push(el('path', Object.assign({}, base, { 'stroke-width': (o.w || 1.8) * 2.6, opacity: 0.2 }), grp));
+  }
+  els.push(el('path', Object.assign({}, base, { 'stroke-width': o.w || 1.8, stroke: o.core || color }), grp));
+  grp.strokes = els;
+  if (!o.drawn && !o.dash) gsap.set(els, { drawSVG: '0%' });
+  return grp;
+}
+const N = {
+  path: (p, d, c, o) => neonEls(p, d, c, o),
+  rect: (p, x, y, w, h, c, o) => neonEls(p, rrPath(x, y, w, h, (o && o.r) || 0), c, o),
+  line: (p, x1, y1, x2, y2, c, o) => neonEls(p, 'M' + x1 + ' ' + y1 + 'L' + x2 + ' ' + y2, c, o),
+  poly: (p, pts, c, o) => neonEls(p, 'M' + pts.map(q => q[0] + ' ' + q[1]).join('L') + (o && o.closed ? 'Z' : ''), c, o)
+};
+/* A glowing label: the text plus a soft copy behind it. */
+function glowText(parent, x, y, str, o) {
+  o = o || {};
+  const grp = g(parent, { opacity: o.op });
+  const common = Object.assign({ cls: 'mono', size: 18, fill: o.fill || C.ink }, o, { op: undefined });
+  if (o.glow !== false) {
+    const h = stext(grp, x, y, str, Object.assign({}, common, { fill: o.glowColor || common.fill }));
+    h.setAttribute('stroke', o.glowColor || common.fill); h.setAttribute('stroke-width', (o.size || 18) * 0.22);
+    h.setAttribute('stroke-linejoin', 'round'); h.setAttribute('opacity', 0.16);
+  }
+  grp.text = stext(grp, x, y, str, common);
+  return grp;
+}
+
+/* =====================================================================
+   Camera. The world SVG's viewBox is the camera. Every camera state is
+   { cx, cy, w } in layout units; height is always w * 9 / 16, so every
+   framing is 16:9 by construction. Moves are recorded in build order,
+   never overlap, and are pure functions of a tweened progress value, so
+   they reverse exactly and survive seeks.
+   ===================================================================== */
+const CAM = { svg: null, P: { x: 0, y: 0 }, init: null, build: null, moves: [], cur: null, lastVB: '', lods: [] };
+const cam = (cx, cy, w) => ({ cx: cx, cy: cy, w: w || W });
+
+/* van Wijk and Nuij, "Smooth and efficient zooming and panning" (as in
+   d3.interpolateZoom): zooms out while panning far, then back in. */
+function vanWijk(a, b, rho) {
+  rho = rho || 1.25;
+  const r2 = rho * rho, r4 = r2 * r2;
+  const ux0 = a.cx, uy0 = a.cy, w0 = a.w, ux1 = b.cx, uy1 = b.cy, w1 = b.w;
+  const dx = ux1 - ux0, dy = uy1 - uy0, d2 = dx * dx + dy * dy;
+  if (d2 < 1e-9) {
+    const S = Math.log(w1 / w0) / rho;
+    return t => ({ cx: ux0 + t * dx, cy: uy0 + t * dy, w: w0 * Math.exp(rho * t * S) });
+  }
+  const d1 = Math.sqrt(d2);
+  const b0 = (w1 * w1 - w0 * w0 + r4 * d2) / (2 * w0 * r2 * d1);
+  const b1 = (w1 * w1 - w0 * w0 - r4 * d2) / (2 * w1 * r2 * d1);
+  const r0 = Math.log(Math.sqrt(b0 * b0 + 1) - b0);
+  const r1 = Math.log(Math.sqrt(b1 * b1 + 1) - b1);
+  const S = (r1 - r0) / rho;
+  const coshr0 = Math.cosh(r0), sinhr0 = Math.sinh(r0);
+  return t => {
+    const s = t * S;
+    const u = w0 / (r2 * d1) * (coshr0 * Math.tanh(rho * s + r0) - sinhr0);
+    return { cx: ux0 + u * dx, cy: uy0 + u * dy, w: w0 * coshr0 / Math.cosh(rho * s + r0) };
+  };
+}
+/* Anchored zoom: width changes exponentially while the anchor point glides
+   from its screen position in a to its screen position in b. Used for the
+   pixel zooms, where the pixel must stay under the viewer's eye. */
+function anchorZoom(a, b, A, glide) {
+  const sa = { x: (A.x - a.cx) / a.w, y: (A.y - a.cy) / (a.w * AR) };
+  const sb = { x: (A.x - b.cx) / b.w, y: (A.y - b.cy) / (b.w * AR) };
+  const k = Math.log(b.w / a.w);
+  glide = glide || (t => t);
+  return t => {
+    const w = a.w * Math.exp(k * t), u = glide(t);
+    const sx = lerp(sa.x, sb.x, u), sy = lerp(sa.y, sb.y, u);
+    return { cx: A.x - sx * w, cy: A.y - sy * w * AR, w: w };
+  };
+}
+function camStart(c) { CAM.init = c; CAM.build = c; }
+function camTo(target, at, dur, o) {
+  o = o || {};
+  const a = CAM.build, b = target;
+  const f = o.anchor ? anchorZoom(a, b, o.anchor, o.glide) : o.linear ? (t => ({ cx: lerp(a.cx, b.cx, t), cy: lerp(a.cy, b.cy, t), w: a.w * Math.pow(b.w / a.w, t) })) : vanWijk(a, b, o.rho);
+  const m = { p: 0, f: f, b: b, at: at, dur: dur };
+  if (CAM.moves.length) {
+    const prev = CAM.moves[CAM.moves.length - 1];
+    if (at < prev.at + prev.dur - 1e-6) console.warn('camera moves overlap at', at);
+  }
+  CAM.moves.push(m);
+  CAM.build = b;
+  tl.to(m, { p: 1, duration: dur, ease: o.ease || E.cam }, at);
+  return m;
+}
+function camNow() {
+  for (let i = CAM.moves.length - 1; i >= 0; i--) {
+    const m = CAM.moves[i];
+    if (m.p > 0) return m.p >= 1 ? m.b : m.f(m.p);
+  }
+  return CAM.init;
+}
+/* Level of detail: opacity as a function of the camera (zoom or position). */
+function lod(node, fn) { CAM.lods.push({ n: node, f: fn, last: -1 }); }
+/* World point to stage point, for the current camera. */
+function toStage(x, y, c) {
+  c = c || CAM.cur;
+  return { x: (x - (c.cx - c.w / 2)) / c.w * W, y: (y - (c.cy - c.w * AR / 2)) / (c.w * AR) * H };
+}
+const hudRead = { node: null, last: '' };
+addRenderer(() => {
+  const c = camNow();
+  CAM.cur = c;
+  const h = c.w * AR;
+  const vb = fmt(c.cx - c.w / 2 - CAM.P.x, 5) + ' ' + fmt(c.cy - h / 2 - CAM.P.y, 5) + ' ' + fmt(c.w, 5) + ' ' + fmt(h, 5);
+  if (vb !== CAM.lastVB) { CAM.svg.setAttribute('viewBox', vb); CAM.lastVB = vb; }
+  for (let i = 0; i < CAM.lods.length; i++) {
+    const L0 = CAM.lods[i];
+    const v = Math.round(clamp(L0.f(c), 0, 1) * 1000) / 1000;
+    if (v !== L0.last) { L0.n.setAttribute('opacity', v); L0.n.style.display = v <= 0 ? 'none' : ''; L0.last = v; }
+  }
+  if (hudRead.node) {
+    const z = W / c.w;
+    const zs = z >= 10 ? z.toFixed(0) : z >= 1 ? z.toFixed(2) : z.toFixed(3);
+    const s = 'x ' + fmt(c.cx - CAM.P.x, 1).padStart(8) + '   y ' + fmt(c.cy - CAM.P.y, 1).padStart(8) + '   zoom ' + zs + '\u00d7';
+    if (s !== hudRead.last) { hudRead.node.textContent = s; hudRead.last = s; }
+  }
+});
+
+/* =====================================================================
+   5. BUILDERS: the world
+   ===================================================================== */
+const SC = {};                      /* scene timeline builders, by scene number */
+/* Resting camera framings, by name. */
+const OVERVIEW = cam(6640, 2700, 15500);
+const F = {
+  mon: cam(L.S.cx, L.S.cy - 55, 2150),
+  T: cam(L.T.cx, L.T.cy, W),
+  P: cam(L.P.cx, L.P.cy, W)
+};
+const world = $('world');
+CAM.svg = world;
+const DEFS = el('defs', null, world);
+const ROOT = g(world, { id: 'root' });
+const gDesk = g(ROOT, { id: 'desk' });
+const gPaper = g(ROOT, { id: 'paperSheet' });
+const gRoute = g(ROOT, { id: 'route' });
+/* The paper and the route are introduced with the map (scene 5), so no camera
+   path shows them earlier; the route is a map layer (scenes 5 and 29 to 30). */
+gsap.set([gPaper, gRoute], { autoAlpha: 0 });
+const gTop = g(ROOT, { id: 'top' });
+const gMain = g(ROOT, { id: 'mainSide' });
+const gLight = g(ROOT, { id: 'lightSide' });
+const gOver = g(ROOT, { id: 'overview' });
+
+/* ---------- Generated textures (seeded, no remote images) ---------- */
+function canvasTex(size, fn) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = size;
+  const cx = cv.getContext('2d'); const img = cx.createImageData(size, size);
+  fn(img.data, size); cx.putImageData(img, 0, 0);
+  return cv.toDataURL('image/png');
+}
+/* Periodic value noise so tiles repeat without seams. */
+function periodicNoise(size, cells, seed) {
+  const r = mulberry32(seed), grid = [];
+  for (let i = 0; i < cells * cells; i++) grid.push(r());
+  const at = (x, y) => grid[((y % cells) + cells) % cells * cells + ((x % cells) + cells) % cells];
+  return (px, py) => {
+    const fx = px / size * cells, fy = py / size * cells;
+    const x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0;
+    const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+    return lerp(lerp(at(x0, y0), at(x0 + 1, y0), sx), lerp(at(x0, y0 + 1), at(x0 + 1, y0 + 1), sx), sy);
+  };
+}
+/* Fine grain for the multiply overlay: paper tooth, with a few fibers. */
+const GRAIN = canvasTex(256, (d, s) => {
+  const r = mulberry32(7), n1 = periodicNoise(s, 32, 11);
+  for (let i = 0; i < s * s; i++) {
+    const x = i % s, y = (i / s) | 0;
+    let v = 244 + r() * 11 - (1 - n1(x, y)) * 9;
+    if (r() < 0.012) v -= 26;
+    d[i * 4] = v; d[i * 4 + 1] = v - 1; d[i * 4 + 2] = v - 3; d[i * 4 + 3] = 255;
+  }
+  for (let f = 0; f < 70; f++) {
+    let x = r() * s, y = r() * s; const a = r() * Math.PI, len = 6 + r() * 16;
+    for (let k = 0; k < len; k++) {
+      const ix = ((Math.round(x) % s) + s) % s, iy = ((Math.round(y) % s) + s) % s, j = (iy * s + ix) * 4;
+      d[j] -= 10; d[j + 1] -= 10; d[j + 2] -= 9;
+      x += Math.cos(a); y += Math.sin(a);
+    }
+  }
+});
+$('grain').style.backgroundImage = 'url(' + GRAIN + ')';
+/* Low-frequency mottling for the paper sheet itself (in world space). */
+const MOTTLE = canvasTex(256, (d, s) => {
+  const n1 = periodicNoise(s, 4, 23), n2 = periodicNoise(s, 9, 31);
+  for (let i = 0; i < s * s; i++) {
+    const x = i % s, y = (i / s) | 0;
+    const v = (n1(x, y) - 0.5) * 7 + (n2(x, y) - 0.5) * 4;
+    d[i * 4] = 237 + v; d[i * 4 + 1] = 236 + v; d[i * 4 + 2] = 230 + v * 1.1; d[i * 4 + 3] = 255;
+  }
+});
+
+/* ---------- Paint servers ---------- */
+function pattern(id, w, h, build) {
+  const p = el('pattern', { id: id, width: w, height: h, patternUnits: 'userSpaceOnUse' }, DEFS);
+  build(p); return p;
+}
+pattern('pMottle', 1400, 1400, p => el('image', { href: MOTTLE, width: 1400, height: 1400, preserveAspectRatio: 'none' }, p));
+pattern('pGridFine', 50, 50, p => el('path', { d: 'M50 0H0V50', fill: 'none', stroke: C.grid, 'stroke-width': 0.9, opacity: 0.42 }, p));
+pattern('pGridMajor', 250, 250, p => el('path', { d: 'M250 0H0V250', fill: 'none', stroke: C.grid, 'stroke-width': 1.6, opacity: 0.4 }, p));
+pattern('pDots', 80, 80, p => el('circle', { cx: 40, cy: 40, r: 1.5, fill: C.deskDot }, p));
+function lgrad(id, x1, y1, x2, y2, stops) {
+  const gr = el('linearGradient', { id: id, x1: x1, y1: y1, x2: x2, y2: y2 }, DEFS);
+  stops.forEach(s => el('stop', { offset: s[0], 'stop-color': s[1], 'stop-opacity': s[2] === undefined ? 1 : s[2] }, gr));
+  return gr;
+}
+lgrad('gShadowR', 0, 0, 1, 0, [[0, '#000', 0.55], [1, '#000', 0]]);
+lgrad('gShadowB', 0, 0, 0, 1, [[0, '#000', 0.55], [1, '#000', 0]]);
+lgrad('gScan', 0, 0, 1, 0, [[0, '#fff', 0], [0.7, '#fff', 0.5], [1, '#fff', 0]]);
+lgrad('gScanV', 0, 0, 0, 1, [[0, '#fff', 0], [0.7, '#fff', 0.55], [1, '#fff', 0]]);
+const fGlow = el('filter', { id: 'fGlow', x: '-50%', y: '-50%', width: '200%', height: '200%' }, DEFS);
+el('feGaussianBlur', { stdDeviation: 0.045, result: 'b' }, fGlow);
+const fMerge = el('feMerge', null, fGlow);
+el('feMergeNode', { in: 'b' }, fMerge); el('feMergeNode', { in: 'SourceGraphic' }, fMerge);
+
+/* ---------- The desk (dark) and the paper sheet ---------- */
+const PA = L.paper;
+el('rect', { x: -40000, y: -40000, width: 100000, height: 100000, fill: C.desk }, gDesk);
+const deskDots = el('rect', { x: -6000, y: -4000, width: 26000, height: 16000, fill: 'url(#pDots)' }, gDesk);
+lod(deskDots, c => 1 - smooth(2600, 5200, c.w));
+/* Soft shadow the sheet casts on the desk. */
+el('rect', { x: PA.x1, y: PA.y0 + 30, width: 70, height: PA.y1 - PA.y0, fill: 'url(#gShadowR)' }, gPaper);
+el('rect', { x: PA.x0 + 30, y: PA.y1, width: PA.x1 - PA.x0, height: 70, fill: 'url(#gShadowB)' }, gPaper);
+el('rect', { x: PA.x0, y: PA.y0, width: PA.x1 - PA.x0, height: PA.y1 - PA.y0, fill: 'url(#pMottle)' }, gPaper);
+const gridFine = el('rect', { x: PA.x0, y: PA.y0, width: PA.x1 - PA.x0, height: PA.y1 - PA.y0, fill: 'url(#pGridFine)' }, gPaper);
+const gridMajor = el('rect', { x: PA.x0, y: PA.y0, width: PA.x1 - PA.x0, height: PA.y1 - PA.y0, fill: 'url(#pGridMajor)' }, gPaper);
+lod(gridFine, c => 0.75 * (1 - smooth(2200, 4800, c.w)));
+lod(gridMajor, c => 0.8 * (1 - smooth(9000, 16000, c.w)));
+/* The sheet's top edge, a hair lighter, like a cut edge catching light. */
+el('rect', { x: PA.x0, y: PA.y0, width: PA.x1 - PA.x0, height: 3, fill: '#fbfaf6', opacity: 0.8 }, gPaper);
+
+/* ---------- The route: the pipeline as a metro line over the world ---------- */
+const RT = {};
+(function buildRoute() {
+  const sx = L.spineX, ry = L.runY, rx = L.rspineX, r = 260;
+  const topY = PA.y0 + 380;
+  const tx = 330;
+  RT.dSrc = 'M' + tx + ' 862 V ' + PA.y0;
+  RT.dMain = 'M' + tx + ' ' + PA.y0 + ' V ' + (topY - 140) + ' C ' + tx + ' ' + (topY - 20) + ' ' + sx + ' ' + (topY - 40) + ' ' + sx + ' ' + (topY + 80) +
+    ' V ' + (ry - r) + ' A ' + r + ' ' + r + ' 0 0 0 ' + (sx + r) + ' ' + ry + ' H ' + L.edge;
+  RT.dComp = 'M' + L.edge + ' ' + ry + ' H ' + (rx - r) + ' A ' + r + ' ' + r + ' 0 0 0 ' + rx + ' ' + (ry - r) + ' V 3560';
+  RT.dViz = 'M' + rx + ' 3560 V 1420 C ' + rx + ' 1120 ' + L.S.cx + ' 1260 ' + L.S.cx + ' 1000';
+  RT.full = RT.dSrc + ' ' + RT.dMain.replace(/^M[^V]+/, '') + ' ' + RT.dComp.replace(/^M[^H]+/, '') + ' ' + RT.dViz.replace(/^M[^V]+/, '');
+  RT.src = N.path(gRoute, RT.dSrc, C.src, { w: 14 });
+  RT.main = P.path(gRoute, RT.dMain, { stroke: C.mainP, strokeWidth: 26, roughness: 1.4, bowing: 0.4, op: 0.92 });
+  RT.comp = N.path(gRoute, RT.dComp, C.comp, { w: 16 });
+  RT.viz = N.path(gRoute, RT.dViz, C.viz, { w: 16 });
+  /* Stations: [label, x, y, colors, product, side] */
+  const sp = L.rows;
+  RT.stations = [
+    ['Parse', sx, sp.parse, ['lead'], 'the DOM', 'L', true],
+    ['Animate', sx, (sp.parse + sp.style) / 2 + 60, ['main', 'comp'], null, 'L'],
+    ['Style', sx, sp.style, ['main'], 'computed styles', 'L'],
+    ['Layout', sx, sp.layout, ['main'], 'the fragment tree', 'L'],
+    ['Pre-paint', sx, sp.paint - 330, ['main'], 'property trees', 'L'],
+    ['Scroll', sx, sp.paint + 20, ['main', 'comp'], null, 'L'],
+    ['Paint', sx, sp.paint + 330, ['main'], 'the display list', 'L'],
+    ['Commit', L.edge, ry, ['comp'], 'a copy for the compositor', 'B'],
+    ['Layerize', rx, L.ds.ds1, ['comp'], 'layers', 'R'],
+    ['Raster', rx, L.ds.ds2 + 300, ['comp', 'viz'], 'GPU tiles', 'R'],
+    ['Activate', rx, L.ds.ds2 - 300, ['comp'], 'active tree', 'R'],
+    ['Aggregate', rx, L.ds.ds3, ['viz'], 'one frame', 'R'],
+    ['Draw', rx, 2300, ['viz'], 'pixels', 'R']
+  ].map(s => {
+    const [name, x, y, cols, product, side, prelude] = s;
+    const onPaper = side === 'L';
+    const small = !product && name !== 'Commit';
+    const rad = small ? 62 : 92;
+    const grp = g(gRoute);
+    let ring;
+    if (onPaper) {
+      const col = cols[0] === 'lead' ? C.leadMid : THREAD[cols[0]].paper;
+      ring = P.ellipse(grp, x, y, rad * 2, rad * 2, { stroke: col, strokeWidth: 16, fill: C.paper, fillStyle: 'solid', roughness: 1.1 });
+      if (cols[1]) ring.strokes = ring.strokes.concat(P.ellipse(grp, x, y, rad * 1.25, rad * 1.25, { stroke: THREAD[cols[1]].paper, strokeWidth: 14, roughness: 1 }).strokes);
+      if (prelude) el('circle', { cx: x, cy: y, r: rad * 0.42, fill: 'none', stroke: C.leadMid, 'stroke-width': 10, 'stroke-dasharray': '16 16' }, grp);
+    } else {
+      const c0 = THREAD[cols[0]].dark;
+      el('circle', { cx: x, cy: y, r: rad, fill: C.desk }, grp);
+      ring = N.path(grp, 'M' + (x - rad) + ' ' + y + 'a' + rad + ' ' + rad + ' 0 1 0 ' + (2 * rad) + ' 0a' + rad + ' ' + rad + ' 0 1 0 ' + (-2 * rad) + ' 0', c0, { w: 15 });
+      if (cols[1]) ring.strokes = ring.strokes.concat(N.path(grp, 'M' + (x - rad * 0.6) + ' ' + y + 'a' + rad * 0.6 + ' ' + rad * 0.6 + ' 0 1 0 ' + (1.2 * rad) + ' 0a' + rad * 0.6 + ' ' + rad * 0.6 + ' 0 1 0 ' + (-1.2 * rad) + ' 0', THREAD[cols[1]].dark, { w: 13 }).strokes);
+    }
+    const size = small ? 118 : 158;
+    let lx, ly, anchor;
+    if (side === 'L') { lx = x - rad - 60; ly = y + size * 0.36; anchor = 'end'; }
+    else if (side === 'R') { lx = x + rad + 60; ly = y + size * 0.36; anchor = 'start'; }
+    else { lx = x + rad + 50; ly = y + rad + size * 0.95; anchor = 'start'; }
+    const lab = stext(grp, lx, ly, name, { cls: 'titlef', size: size, weight: 600, anchor: anchor, fill: onPaper ? C.lead : C.ink, ls: '-0.02em' });
+    hide(lab);
+    let prod = null;
+    if (product) {
+      prod = stext(grp, lx, ly + size * 0.95, product, { cls: onPaper ? 'hand' : 'mono', size: 132, anchor: anchor, fill: onPaper ? C.leadMid : C.dim });
+      hide(prod);
+    }
+    gsap.set(grp, { transformOrigin: x + 'px ' + y + 'px' });
+    return { name: name, g: grp, ring: ring, label: lab, prod: prod, x: x, y: y };
+  });
+  /* Legend in the top band. */
+  RT.legend = g(gRoute);
+  [['main', 'main thread'], ['comp', 'compositor thread'], ['viz', 'Viz process']].forEach((k, i) => {
+    const x = 4600 + i * 1900;
+    el('circle', { cx: x, cy: 430, r: 46, fill: THREAD[k[0]].dark }, RT.legend);
+    el('circle', { cx: x, cy: 430, r: 80, fill: THREAD[k[0]].dark, opacity: 0.18 }, RT.legend);
+    stext(RT.legend, x + 110, 430 + 46, k[1], { cls: 'mono', size: 128, fill: C.ink });
+  });
+  hide(RT.legend);
+  /* A light that travels the whole route in scene 29. */
+  RT.path = el('path', { d: RT.full, fill: 'none', stroke: 'none' }, gRoute);
+  RT.len = 0;
+  RT.dot = g(gRoute, { opacity: 0 });
+  el('circle', { r: 150, fill: '#fff', opacity: 0.1 }, RT.dot);
+  el('circle', { r: 70, fill: '#fff', opacity: 0.35 }, RT.dot);
+  el('circle', { r: 34, fill: '#fff' }, RT.dot);
+  RT.prox = { u: 0 };
+  let lastU = -1;
+  addRenderer(() => {
+    if (RT.prox.u === lastU) return;
+    lastU = RT.prox.u;
+    if (!RT.len) RT.len = RT.path.getTotalLength();
+    const pt = RT.path.getPointAtLength(RT.len * clamp(RT.prox.u, 0, 1));
+    RT.dot.setAttribute('transform', 'translate(' + fmt(pt.x, 2) + ' ' + fmt(pt.y, 2) + ')');
+  });
+})();
+
+/* =====================================================================
+   Titles (HTML, inside the stage). Each scene has its own block; the
+   characters of the title rise through a mask.
+   ===================================================================== */
+const titlesEl = $('titles');
+const TB = SCENES.map((s, i) => {
+  const mode = s.mode === 'split' ? 'paper' : s.mode;
+  const b = hdiv(titlesEl, 'tb ' + mode + (s.hero ? ' hero' : '') + (s.end ? ' end' : ''));
+  const head = hdiv(b, 'head');
+  let num = null;
+  if (!s.hero && !s.end) {
+    num = hdiv(head, 'num');
+    num.style.color = s.threads ? THREAD[s.threads[s.threads.length - 1]][s.mode === 'dark' ? 'dark' : 'paper'] : (mode === 'dark' ? C.dim : C.leadMid);
+  }
+  const mask = hdiv(head, 'mask');
+  const h2 = document.createElement('h2');
+  mask.appendChild(h2);
+  const chars = [];
+  for (const ch of s.title) { const sp = document.createElement('span'); sp.className = 'ch'; sp.textContent = ch; h2.appendChild(sp); chars.push(sp); }
+  const sub = hdiv(b, 'sub', null, esc(s.sub));
+  let chips = null;
+  if (s.threads) {
+    chips = hdiv(b, 'chips' + (s.mode === 'split' ? ' dark' : ''));
+    s.threads.forEach(k => {
+      const c = hdiv(chips, 'chip', '--c:' + THREAD[k][s.mode === 'paper' ? 'paper' : 'dark'], '<i></i>' + esc(THREAD[k].label));
+      if (s.mode === 'split') { c.style.background = 'rgba(8,11,17,.72)'; c.style.boxShadow = '0 0 14px color-mix(in srgb, ' + THREAD[k].dark + ' 30%, transparent)'; }
+    });
+  }
+  gsap.set(chars, { yPercent: 118 });
+  gsap.set(chips ? [sub, chips] : [sub], { autoAlpha: 0, y: 10 });
+  let numProx = null;
+  if (num) numProx = scrambler(num, String(i + 1).padStart(2, '0'), { from: '' });
+  return { b: b, chars: chars, rest: chips ? [sub, chips] : [sub], num: numProx };
+});
+function titleIn(i, at, o) {
+  o = o || {};
+  const t = TB[i];
+  tl.to(t.chars, { yPercent: 0, duration: o.dur || 0.62, stagger: o.stagger || 0.016, ease: E.out }, at);
+  if (t.num) tl.to(t.num, { p: 1, duration: 0.5, ease: E.lin }, at);
+  tl.to(t.rest, { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.1, ease: E.out }, at + (o.restAt || 0.22));
+}
+function titleOut(i, at) {
+  const t = TB[i];
+  tl.to(t.chars, { yPercent: -118, duration: 0.34, stagger: 0.008, ease: E.in }, at);
+  if (t.num) tl.to(t.num, { p: 0, duration: 0.25, ease: E.lin }, at);
+  tl.to(t.rest, { autoAlpha: 0, y: -8, duration: 0.26, ease: E.in }, at);
+}
+
+/* ---------- Screen-space HUD ---------- */
+const hudEl = $('hud');
+const creditEl = $('credit');
+gsap.set(creditEl, { autoAlpha: 0 });
+hudRead.node = hdiv(hudEl, 'hud-read');
+hide(hudRead.node);
+function hudTag(text, x, y, cls, css) { return hdiv(hudEl, 'hud-tag' + (cls ? ' ' + cls : ''), 'left:' + x + 'px; top:' + y + 'px;' + (css || ''), esc(text)); }
+
+
+/* ---------- Paper helpers (main-thread scenes) ---------- */
+const PAPER_TXT = C.lead;
+function ptxt(parent, x, y, s, o) {
+  o = o || {};
+  const t = stext(parent, x, y, s, Object.assign({ cls: 'hand', size: 24, fill: PAPER_TXT }, o));
+  if (o.write !== false) writable(t, o.clip);
+  return t;
+}
+function mtxt(parent, x, y, s, o) {
+  o = o || {};
+  const t = stext(parent, x, y, s, Object.assign({ cls: 'mono', size: 18, fill: PAPER_TXT }, o));
+  if (o.write !== false) writable(t, o.clip);
+  return t;
+}
+/* A labelled pencil box. */
+function pbox(parent, x, y, w, h, label, o) {
+  o = o || {};
+  const grp = g(parent);
+  const r = P.rect(grp, x, y, w, h, Object.assign({ roughness: 0.7 }, o.pen));
+  let t = null;
+  if (label) t = (o.mono === false ? ptxt : mtxt)(grp, o.align === 'left' ? x + 14 : x + w / 2, y + h / 2 + (o.size || 18) * 0.36, label, { size: o.size || 18, anchor: o.align === 'left' ? 'start' : 'middle', fill: o.fill || PAPER_TXT, weight: o.weight });
+  return { g: grp, r: r, t: t, x: x, y: y, w: w, h: h, strokes: r.strokes };
+}
+/* Code path footnote at the bottom right of a paper framing. */
+function codePath(parent, fx, fy, text) {
+  return mtxt(parent, fx + W / 2 - 64, fy + H / 2 - 30, text, { size: 16, anchor: 'end', fill: C.leadMid });
+}
+/* Draw a pencil box and write its label. */
+function penIn(b, at, dur) {
+  draw(b.strokes, at, dur || 0.45);
+  if (b.t) write(b.t, at + (dur || 0.45) * 0.5, 0.4);
+}
+/* Mode switch: paper grain on for pencil scenes, off for light scenes. */
+const grainEl = $('grain');
+function grainTo(v, at, dur) { tl.to(grainEl, { opacity: v, duration: dur || 0.8, ease: E.soft }, at); }
+
+/* ---------- The monitor, the page, and our pixel (scenes 1, 2, 27, 28) ---------- */
+const SCR = { x: L.S.cx - 768, y: L.S.cy - 432, w: 1536, h: 864 };
+const dev = (dx, dy) => ({ x: SCR.x + dx * PX_UNIT, y: SCR.y + dy * PX_UNIT });
+const css = (x, y) => dev(x * PAGE.dpr, PAGE.ui * PAGE.dpr + y * PAGE.dpr);
+const CSSU = PAGE.dpr * PX_UNIT;           /* world units per CSS px (0.8) */
+const PAGE_FONT = 'Georgia, "Times New Roman", Times, "Liberation Serif", "DejaVu Serif", serif';
+
+/* Raster the heading and paragraph once, at device resolution, to get the
+   pixel grid shown when zoomed in. The same text is drawn as vector below. */
+PAGE.p.lines = breakLines(PAGE.p.text, '400 16px ' + PAGE_FONT, PAGE.p.w);
+/* The badge is fit-content wide and pushed right by margin-left: auto. */
+PAGE.badge.w = Math.round(textW(PAGE.badge.text, '400 16px ' + PAGE_FONT) + 2 * PAGE.badge.pad);
+PAGE.badge.x = PAGE.body.x + PAGE.body.w - PAGE.badge.w;
+const RAS = (function () {
+  const x0 = 1180, y0 = 190, w = 1500, h = 440;       /* device px region */
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const cx = cv.getContext('2d');
+  cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h);
+  cx.fillStyle = C.pink; cx.font = '700 ' + (PAGE.h1.size * 2) + 'px ' + PAGE_FONT; cx.textBaseline = 'alphabetic';
+  cx.fillText(PAGE.h1.text, PAGE.h1.x * 2 - x0, PAGE.ui * 2 + PAGE.h1.base * 2 - y0);
+  cx.fillStyle = PAGE.text; cx.font = '400 ' + (PAGE.p.size * 2) + 'px ' + PAGE_FONT;
+  PAGE.p.lines.forEach((ln, i) => cx.fillText(ln, PAGE.p.x * 2 - x0, PAGE.ui * 2 + (PAGE.p.y + 15 + i * 19) * 2 - y0));
+  const data = cx.getImageData(0, 0, w, h).data;
+  /* Our pixel: the middle of the H's left stem, in its upper half. */
+  const row = PAGE.ui * 2 + (PAGE.h1.base - 34) * 2 - y0;
+  let a = -1, b = -1;
+  for (let x = 0; x < 300; x++) {
+    const i = (row * w + x) * 4, pinkish = data[i] > 250 && data[i + 1] < 60 && data[i + 2] > 120 && data[i + 2] < 150;
+    if (pinkish && a < 0) a = x;
+    if (a >= 0 && !pinkish) { b = x - 1; break; }
+  }
+  const col = a >= 0 ? Math.round((a + b) / 2) : 40;
+  const px = (x, y) => { const i = (y * w + x) * 4; return [data[i], data[i + 1], data[i + 2]]; };
+  return { x0: x0, y0: y0, w: w, h: h, url: cv.toDataURL('image/png'), col: x0 + col, row: y0 + row, px: (dx, dy) => px(col + dx, row + dy) };
+})();
+CAM.P = { x: SCR.x + (RAS.col + 0.5) * PX_UNIT, y: SCR.y + (RAS.row + 0.5) * PX_UNIT };
+ROOT.setAttribute('transform', 'translate(' + fmt(-CAM.P.x, 4) + ' ' + fmt(-CAM.P.y, 4) + ')');
+const PIX = CAM.P;
+
+const MON = {};
+(function buildMonitor() {
+  const grp = MON.g = g(gTop, { id: 'monitor' });
+  el('rect', { x: SCR.x - 26, y: SCR.y - 26, width: SCR.w + 52, height: SCR.h + 52, rx: 20, fill: '#0c1018', stroke: '#1f2838', 'stroke-width': 2 }, grp);
+  el('rect', { x: SCR.x - 2, y: SCR.y - 2, width: SCR.w + 4, height: SCR.h + 4, rx: 3, fill: '#020305' }, grp);
+  /* Screen content: dark until Draw lights it (scene 27); lit in scenes 1 and 2. */
+  const lit = MON.lit = g(grp);
+  /* Browser interface: tab strip and toolbar (drawn by the browser process). */
+  const ui = MON.ui = g(lit);
+  el('rect', { x: SCR.x, y: SCR.y, width: SCR.w, height: 64, fill: '#1c212b' }, ui);
+  el('path', { d: rrPath(SCR.x + 24, SCR.y + 8, 250, 30, 8), fill: '#2b3240' }, ui);
+  stext(ui, SCR.x + 44, SCR.y + 28, 'pixel.blog', { cls: 'mono', size: 11, fill: '#c9d0dc' });
+  el('rect', { x: SCR.x, y: SCR.y + 38, width: SCR.w, height: 26, fill: '#2b3240' }, ui);
+  [0, 1, 2].forEach(i => el('circle', { cx: SCR.x + 22 + i * 22, cy: SCR.y + 51, r: 6, fill: '#566074' }, ui));
+  el('path', { d: rrPath(SCR.x + 100, SCR.y + 42, 900, 18, 9), fill: '#1c212b' }, ui);
+  stext(ui, SCR.x + 116, SCR.y + 55, 'https://pixel.blog/', { cls: 'mono', size: 10, fill: '#aeb6c4' });
+  /* The page, as vector. */
+  const pg = MON.page = g(lit);
+  el('rect', { x: SCR.x, y: SCR.y + 64, width: SCR.w, height: SCR.h - 64, fill: PAGE.bg }, pg);
+  const vec = MON.vec = g(pg);
+  const hp = css(6, 15);
+  stext(vec, hp.x, hp.y, PAGE.header.text, { cls: 'page', size: 16 * CSSU, fill: PAGE.text });
+  const h1p = css(PAGE.h1.x, PAGE.h1.base);
+  const h1t = stext(vec, h1p.x, h1p.y, PAGE.h1.text, { cls: 'page', size: PAGE.h1.size * CSSU, fill: C.pink, weight: 700 });
+  h1t;
+  PAGE.p.lines.forEach((ln, i) => {
+    const q = css(PAGE.p.x, PAGE.p.y + 15 + i * 19);
+    stext(vec, q.x, q.y, ln, { cls: 'page', size: PAGE.p.size * CSSU, fill: PAGE.text });
+  });
+  MON.imgG = drawSunset(pg, css(PAGE.img.x, PAGE.img.y), PAGE.img.w * CSSU, PAGE.img.h * CSSU);
+  MON.mapG = drawMap(pg, css(PAGE.iframe.x, PAGE.iframe.y), PAGE.iframe.w * CSSU, PAGE.iframe.h * CSSU);
+  const B = PAGE.badge, bp = css(B.x, B.y), bt = css(B.x + B.pad, B.y + 17);
+  MON.badge = g(pg);
+  el('rect', { x: bp.x, y: bp.y, width: B.w * CSSU, height: B.h * CSSU, rx: B.r * CSSU, fill: B.bg }, MON.badge);
+  stext(MON.badge, bt.x, bt.y, B.text, { cls: 'page', size: 16 * CSSU, fill: B.fg });
+  /* Raster of the heading: the pixel grid, shown when zoomed in. */
+  const rp = dev(RAS.x0, RAS.y0);
+  const rasG = g(pg);
+  el('image', { href: RAS.url, x: rp.x, y: rp.y, width: RAS.w * PX_UNIT, height: RAS.h * PX_UNIT, style: 'image-rendering: pixelated; image-rendering: crisp-edges' }, rasG);
+  pattern('pPixGrid', PX_UNIT, PX_UNIT, p => { p.setAttribute('x', SCR.x); p.setAttribute('y', SCR.y); el('path', { d: 'M' + PX_UNIT + ' 0H0V' + PX_UNIT, fill: 'none', stroke: '#050608', 'stroke-width': 0.035 }, p); });
+  el('rect', { x: rp.x, y: rp.y, width: RAS.w * PX_UNIT, height: RAS.h * PX_UNIT, fill: 'url(#pPixGrid)' }, rasG);
+  lod(rasG, c => 1 - smooth(55, 150, c.w));
+  lod(vec, c => smooth(40, 110, c.w));
+  /* Subpixels of our pixel and its neighbours. */
+  const subG = MON.sub = g(pg);
+  el('rect', { x: PIX.x - 4.5 * PX_UNIT, y: PIX.y - 3.5 * PX_UNIT, width: 9 * PX_UNIT, height: 7 * PX_UNIT, fill: '#020305' }, subG);
+  /* The glow is a blurred bitmap drawn once under the sharp subpixels: far
+     cheaper than a live SVG blur, which would cover the whole screen when
+     zoomed in. Same blur radius as before (0.045 of a pixel). */
+  const SUB = [];
+  for (let dy = -3; dy <= 3; dy++) for (let dx = -4; dx <= 4; dx++) {
+    const rgb = RAS.px(dx, dy);
+    for (let k = 0; k < 3; k++) SUB.push({ x: (dx - 0.5) + (k / 3 + 0.035), y: (dy - 0.5) + 0.04, c: C.sub[k], a: 0.04 + 0.96 * rgb[k] / 255 });
+  }
+  const ppu = 60, mg = 0.3, cvw = Math.round((9 + 2 * mg) * ppu), cvh = Math.round((7 + 2 * mg) * ppu);
+  const gcv = document.createElement('canvas'); gcv.width = cvw; gcv.height = cvh;
+  const gx = gcv.getContext('2d');
+  gx.filter = 'blur(' + (0.045 * ppu) + 'px)';
+  SUB.forEach(q => { gx.globalAlpha = q.a; gx.fillStyle = q.c; gx.fillRect((q.x + 4.5 + mg) * ppu, (q.y + 3.5 + mg) * ppu, 0.26 * ppu, 0.92 * ppu); });
+  el('image', { href: gcv.toDataURL('image/png'), x: PIX.x - (4.5 + mg) * PX_UNIT, y: PIX.y - (3.5 + mg) * PX_UNIT, width: (9 + 2 * mg) * PX_UNIT, height: (7 + 2 * mg) * PX_UNIT, preserveAspectRatio: 'none' }, subG);
+  SUB.forEach(q => el('rect', { x: PIX.x + q.x * PX_UNIT, y: PIX.y + q.y * PX_UNIT, width: 0.26 * PX_UNIT, height: 0.92 * PX_UNIT, rx: 0.03 * PX_UNIT, fill: q.c, opacity: fmt(q.a, 3) }, subG));
+  lod(subG, c => 1 - smooth(9, 18, c.w));
+  /* Lit area follows the camera: only our pixel at first, then all of them.
+     An overlay with a hole, not a mask: screen-black beyond the lit radius,
+     transparent inside it, and never over our pixel. A mask would render the
+     whole screen offscreen on every frame. */
+  const gd = el('radialGradient', { id: 'gDark', gradientUnits: 'userSpaceOnUse', cx: PIX.x, cy: PIX.y, r: 1 }, DEFS);
+  el('stop', { offset: 0.8, 'stop-color': '#020305', 'stop-opacity': 0 }, gd);
+  el('stop', { offset: 1, 'stop-color': '#020305', 'stop-opacity': 1 }, gd);
+  /* The hole is exactly our pixel's three subpixels, so nothing from the
+     neighbours leaks through the gaps between them. */
+  const holes = SUB.filter(q => q.x > -0.5 && q.x < 0.5 && q.y > -0.5 && q.y < 0.5)
+    .map(q => 'M' + fmt(PIX.x + q.x * PX_UNIT, 4) + ' ' + fmt(PIX.y + q.y * PX_UNIT, 4) + 'h' + fmt(0.26 * PX_UNIT, 4) + 'v' + fmt(0.92 * PX_UNIT, 4) + 'h' + fmt(-0.26 * PX_UNIT, 4) + 'Z').join('');
+  MON.dark = el('path', { d: 'M' + SCR.x + ' ' + SCR.y + 'h' + SCR.w + 'v' + SCR.h + 'h' + (-SCR.w) + 'Z' + holes, 'fill-rule': 'evenodd', fill: 'url(#gDark)' }, lit);
+  /* Our pixel blooms a little into the dark around it (above the overlay). */
+  const bm = 0.55, bpu = 60, bcv = document.createElement('canvas');
+  bcv.width = bcv.height = Math.round((1 + 2 * bm) * bpu);
+  const bx = bcv.getContext('2d');
+  bx.filter = 'blur(' + (0.08 * bpu) + 'px)';
+  SUB.filter(q => q.x > -0.5 && q.x < 0.5 && q.y > -0.5 && q.y < 0.5).forEach(q => { bx.globalAlpha = q.a; bx.fillStyle = q.c; bx.fillRect((q.x + 0.5 + bm) * bpu, (q.y + 0.5 + bm) * bpu, 0.26 * bpu, 0.92 * bpu); });
+  MON.bloom = el('image', { href: bcv.toDataURL('image/png'), x: PIX.x - (0.5 + bm) * PX_UNIT, y: PIX.y - (0.5 + bm) * PX_UNIT, width: (1 + 2 * bm) * PX_UNIT, height: (1 + 2 * bm) * PX_UNIT, opacity: 0.55 }, lit);
+  lod(MON.bloom, c => 1 - smooth(9, 18, c.w));
+  const far = Math.max(...[[SCR.x, SCR.y], [SCR.x + SCR.w, SCR.y], [SCR.x, SCR.y + SCR.h], [SCR.x + SCR.w, SCR.y + SCR.h]].map(q => Math.hypot(q[0] - PIX.x, q[1] - PIX.y)));
+  let lastR = -1, lastOn = null;
+  addRenderer(() => {
+    const c = CAM.cur, u = clamp(Math.log(c.w / 2.2857) / Math.log(60 / 2.2857), 0, 1);
+    const r = Math.max(1e-3, Math.min(4000, c.w * 1.4 * Math.pow(u, 1.25)));
+    if (Math.abs(r - lastR) > 1e-4) { gd.setAttribute('r', fmt(r, 4)); lastR = r; }
+    const on = r * 0.8 < far;
+    if (on !== lastOn) { MON.dark.style.display = on ? '' : 'none'; lastOn = on; }
+  });
+})();
+function drawSunset(parent, p, w, h) {
+  const grp = g(parent);
+  const id = 'gSun' + (SEED++);
+  lgrad(id, 0, 0, 0, 1, [[0, '#ffd08a'], [0.55, '#ff8a5c'], [1, '#c2466b']]);
+  el('rect', { x: p.x, y: p.y, width: w, height: h, fill: 'url(#' + id + ')' }, grp);
+  el('circle', { cx: p.x + w * 0.3, cy: p.y + h * 0.62, r: h * 0.16, fill: '#fff3d9' }, grp);
+  el('path', { d: 'M' + p.x + ' ' + (p.y + h) + 'L' + (p.x + w * 0.22) + ' ' + (p.y + h * 0.62) + 'L' + (p.x + w * 0.38) + ' ' + (p.y + h * 0.8) + 'L' + (p.x + w * 0.62) + ' ' + (p.y + h * 0.48) + 'L' + (p.x + w) + ' ' + (p.y + h * 0.86) + 'V' + (p.y + h) + 'Z', fill: '#4a2a3c' }, grp);
+  return grp;
+}
+function drawMap(parent, p, w, h) {
+  const grp = g(parent);
+  el('rect', { x: p.x, y: p.y, width: w, height: h, fill: '#e8efe6', stroke: '#9aa3ad', 'stroke-width': 1.6 }, grp);
+  el('path', { d: 'M' + p.x + ' ' + (p.y + h * 0.7) + 'C' + (p.x + w * 0.3) + ' ' + (p.y + h * 0.55) + ' ' + (p.x + w * 0.6) + ' ' + (p.y + h * 0.9) + ' ' + (p.x + w) + ' ' + (p.y + h * 0.6), fill: 'none', stroke: '#9fc3e8', 'stroke-width': h * 0.07 }, grp);
+  el('path', { d: 'M' + (p.x + w * 0.35) + ' ' + p.y + 'L' + (p.x + w * 0.55) + ' ' + (p.y + h), fill: 'none', stroke: '#ffffff', 'stroke-width': h * 0.05 }, grp);
+  el('path', { d: 'M' + p.x + ' ' + (p.y + h * 0.3) + 'L' + (p.x + w) + ' ' + (p.y + h * 0.22), fill: 'none', stroke: '#ffffff', 'stroke-width': h * 0.04 }, grp);
+  el('circle', { cx: p.x + w * 0.62, cy: p.y + h * 0.4, r: h * 0.07, fill: '#e24c3b' }, grp);
+  return grp;
+}
+
+/* Screen-space readouts for the pixel close-up (scene 1). */
+const PIXHUD = {};
+(function buildPixelHud() {
+  const s0 = { x: 800, y: 352 };        /* where the pixel sits on stage at scene 1 */
+  const size = 276;                     /* its size on stage */
+  PIXHUD.cam0 = cam(PIX.x, PIX.y + (0.5 - s0.y / H) * (W * PX_UNIT / size) * AR, W * PX_UNIT / size);
+  const stripe = k => s0.x - size / 2 + (k / 3 + 0.035 + 0.13) * size;
+  PIXHUD.rgb = hudTag('', s0.x - 118, s0.y - size / 2 - 64, '', 'font-size:22px; width:236px; text-align:center;');
+  PIXHUD.rgbProx = scrambler(PIXHUD.rgb, 'rgb(' + HERO_RGB.join(' ') + ')');
+  PIXHUD.ch = HERO_RGB.map((v, k) => {
+    const x = stripe(k);
+    const t = hudTag((['R', 'G', 'B'][k]) + ' ' + v, x - 40, s0.y + size / 2 + 26, 'dim', 'width:80px; text-align:center; color:' + C.sub[k]);
+    const bar = hdiv(hudEl, 'hud-bar', 'left:' + (x - 30) + 'px; top:' + (s0.y + size / 2 + 60) + 'px; width:60px; background:' + C.sub[k] + '22;');
+    const fill = hdiv(bar, '', 'position:absolute; left:0; top:0; bottom:0; width:' + (v / 255 * 100).toFixed(1) + '%; background:' + C.sub[k] + '; border-radius:3px;');
+    gsap.set(fill, { scaleX: 0, transformOrigin: '0 50%' });
+    return { t: t, bar: bar, fill: fill };
+  });
+  PIXHUD.note = hudTag('an RGB stripe; other screens arrange subpixels differently', 0, 848, 'dim', 'left:auto; right:64px; font-size:15px; text-align:right;');
+  hide([PIXHUD.rgb].concat(PIXHUD.ch.map(c => c.t), PIXHUD.ch.map(c => c.bar), PIXHUD.note));
+  /* The reticle keeps marking our pixel at any zoom. */
+  const ret = PIXHUD.ret = hdiv(hudEl, '', 'position:absolute; left:0; top:0; width:0; height:0;');
+  ret.innerHTML = '<svg width="140" height="60" viewBox="-110 -30 140 60" style="position:absolute; left:-110px; top:-30px; overflow:visible">' +
+    '<g fill="none" stroke="' + C.pink + '" stroke-width="2.2" stroke-linecap="round"><path d="M-13 -6V-13H-6M6 -13H13V-6M13 6V13H6M-6 13H-13V6"/></g>' +
+    '<text x="-22" y="5" text-anchor="end" font-family="Martian Mono, monospace" font-size="16" fill="' + C.pink + '" style="font-stretch:87.5%">our pixel</text></svg>';
+  hide(ret);
+  let lastP = '';
+  addRenderer(() => {
+    const s = toStage(PIX.x, PIX.y);
+    const k = fmt(s.x, 1) + ',' + fmt(s.y, 1);
+    if (k !== lastP) { ret.style.transform = 'translate(' + fmt(s.x, 1) + 'px,' + fmt(s.y, 1) + 'px)'; lastP = k; }
+  });
+  /* Pixels in view, from the camera: the visible part of the screen. */
+  PIXHUD.count = hudTag('', 0, 0, '', 'left:auto; right:64px; top:auto; bottom:26px; font-size:19px; text-align:right;');
+  hide(PIXHUD.count);
+  let lastC = '';
+  addRenderer(() => {
+    const c = CAM.cur, h = c.w * AR;
+    const ix = Math.max(0, Math.min(c.cx + c.w / 2, SCR.x + SCR.w) - Math.max(c.cx - c.w / 2, SCR.x));
+    const iy = Math.max(0, Math.min(c.cy + h / 2, SCR.y + SCR.h) - Math.max(c.cy - h / 2, SCR.y));
+    const n = Math.min(PAGE.devW * PAGE.devH, Math.max(1, Math.round(ix * iy / (PX_UNIT * PX_UNIT))));
+    const s = 'pixels in view  ' + grouped(n);
+    if (s !== lastC) { PIXHUD.count.textContent = s; lastC = s; }
+  });
+})();
+
+/* ---------- Source text (scene 3) ---------- */
+const SRC = {};
+(function buildSource() {
+  const grp = SRC.g = g(gTop, { id: 'source' });
+  const X0 = L.T.cx - 800, Y0 = L.T.cy - 450;
+  const utf8 = a => new TextEncoder().encode(a.join('\n') + '\n').length;
+  const panel = (x, y, w, h, name, lines, kind) => {
+    const pg = g(grp);
+    const fill = el('path', { d: rrPath(x, y, w, h, 12), fill: '#07111c', opacity: 0.9 }, pg);
+    const frame = N.rect(pg, x, y, w, h, C.src, { r: 12, w: 1.4 });
+    const bar = el('line', { x1: x, y1: y + 52, x2: x + w, y2: y + 52, stroke: C.src, 'stroke-width': 1, opacity: 0.35 }, pg);
+    const title = mono(pg, x + 22, y + 34, '', { size: 19, fill: C.src, weight: 500 });
+    const tprox = scrambler(title, name);
+    const bytes = mono(pg, x + w - 22, y + 34, utf8(lines) + ' bytes', { size: 16, fill: '#5d8aa3', anchor: 'end' });
+    const code = codeBlock(pg, x + 26, y + 92, lines, kind, { size: 18, lh: 32 });
+    code.rows.forEach(r => writable(r, { w: w - 40 }));
+    hide([fill, bar, bytes]);
+    return { g: pg, fill: fill, frame: frame, bar: bar, tprox: tprox, bytes: bytes, code: code };
+  };
+  SRC.html = panel(X0 + 70, Y0 + 158, 740, 640, 'index.html', SRC_HTML, 'html');
+  SRC.css = panel(X0 + 850, Y0 + 158, 690, 408, 'style.css', SRC_CSS, 'css');
+  SRC.js = panel(X0 + 850, Y0 + 596, 690, 216, 'app.js', SRC_JS, 'js');
+  /* The first bytes on the wire, in hex. */
+  const hex = Array.from(new TextEncoder().encode(SRC_HTML.slice(0, 2).join('\n'))).slice(0, 18).map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+  SRC.hex = mono(grp, X0 + 850, Y0 + 846, hex + ' \u2026', { size: 17, fill: '#3f7896' });
+  writable(SRC.hex, { w: 700 });
+  /* Where our pixel's instructions are. */
+  const hr = SRC.html.code, cr = SRC.css.code;
+  SRC.u1 = N.line(grp, X0 + 70 + 26 + 18 * hr.adv, Y0 + 158 + 92 + 8 * 32 + 9, X0 + 70 + 26 + 36 * hr.adv, Y0 + 158 + 92 + 8 * 32 + 9, C.pink, { w: 2.4 });
+  SRC.u2 = N.line(grp, X0 + 850 + 26, Y0 + 158 + 92 + 3 * 32 + 9, X0 + 850 + 26 + 27 * cr.adv, Y0 + 158 + 92 + 3 * 32 + 9, C.pink, { w: 2.4 });
+})();
+
+/* ---------- Processes and threads (scene 4) ---------- */
+const PROC = {};
+(function buildProcesses() {
+  const grp = PROC.g = g(gTop, { id: 'processes' });
+  const X0 = L.P.cx - 800, Y0 = L.P.cy - 450;
+  const box = (x, y, w, h, title, note, color) => {
+    const bg = g(grp);
+    const fill = el('path', { d: rrPath(x, y, w, h, 18), fill: '#0b111b', 'fill-opacity': 0.92 }, bg);
+    const fr = N.rect(bg, x, y, w, h, color, { r: 18, w: 1.5 });
+    const t = mono(bg, x + 26, y + 44, '', { size: 21, fill: C.ink, weight: 500 });
+    const tp = scrambler(t, title);
+    const n = mono(bg, x + 26, y + 74, note, { size: 16, fill: C.dim });
+    hide([fill, n]);
+    return { g: bg, fill: fill, fr: fr, tp: tp, note: n };
+  };
+  const lane = (x, y, w, name, tasks, color) => {
+    const lg = g(grp);
+    const bar = el('path', { d: rrPath(x, y, w, 96, 12), fill: color, 'fill-opacity': 0.1 }, lg);
+    const edge = N.rect(lg, x, y, w, 96, color, { r: 12, w: 1.6 });
+    const nm = mono(lg, x + 20, y + 38, name, { size: 20, fill: color, weight: 600 });
+    const tk = mono(lg, x + 20, y + 72, tasks, { size: 16, fill: '#c9d0dc' });
+    hide([bar, nm, tk]);
+    return { g: lg, bar: bar, edge: edge, nm: nm, tk: tk };
+  };
+  const top = Y0 + 182, hh = 470;
+  PROC.browser = box(X0 + 60, top, 390, hh, 'browser process', 'one, for all tabs', '#8c96aa');
+  PROC.ghosts = [2, 1].map(k => N.rect(grp, X0 + 500 + k * 16, top - k * 16, 560, hh, C.dim, { r: 18, w: 1, op: 0.35 }));
+  PROC.renderer = box(X0 + 500, top, 560, hh, 'renderer process', 'one per site, sandboxed', '#b4bccb');
+  PROC.viz = box(X0 + 1110, top, 430, hh, 'Viz process', 'one, talks to the GPU', C.viz);
+  PROC.lanes = [
+    lane(X0 + 84, top + 130, 342, 'UI thread', 'tabs, address bar, input', '#8c96aa'),
+    lane(X0 + 524, top + 130, 512, 'main thread', 'JavaScript, parse, style, layout, paint', C.main),
+    lane(X0 + 524, top + 262, 512, 'compositor thread', 'scroll, animate, raster tasks, frames', C.comp),
+    lane(X0 + 1134, top + 130, 382, 'GPU main thread', 'raster, draw', C.viz),
+    lane(X0 + 1134, top + 262, 382, 'display compositor', 'aggregate', C.viz)
+  ];
+  PROC.io = lane(X0 + 84, top + 262, 342, 'IO thread', 'network, IPC', '#8c96aa');
+  /* Messages: network -> browser -> renderer -> Viz -> screen. */
+  const y = top + hh + 112;
+  PROC.wire = N.path(grp, 'M' + (X0 + 30) + ' ' + y + 'H' + (X0 + 1570), '#b4bccb', { w: 1.4, op: 0.85 });
+  PROC.drops = [X0 + 255, X0 + 780, X0 + 1325].map(x => N.line(grp, x, top + hh + 8, x, y - 8, '#b4bccb', { w: 1.2, op: 0.5 }));
+  PROC.wireLabels = [['network', X0 + 40, 'start'], ['bytes', X0 + 475, 'middle'], ['compositor frames', X0 + 1085, 'middle'], ['pixels, to the screen', X0 + 1570, 'end']]
+    .map(a => mono(grp, a[1], y + 36, a[0], { size: 17, fill: '#aeb6c4', anchor: a[2] }));
+  hide(PROC.wireLabels);
+  PROC.dot = g(grp, { opacity: 0 });
+  el('circle', { r: 16, fill: C.src, opacity: 0.2 }, PROC.dot);
+  el('circle', { r: 7, fill: C.src }, PROC.dot);
+  PROC.dotProx = { x: X0 + 20 };
+  PROC.dotY = y;
+  let last = null;
+  addRenderer(() => {
+    if (PROC.dotProx.x === last) return;
+    last = PROC.dotProx.x;
+    PROC.dot.setAttribute('transform', 'translate(' + fmt(last, 2) + ' ' + y + ')');
+    const col = last < X0 + 500 ? C.src : last < X0 + 1110 ? C.comp : C.viz;
+    PROC.dot.lastChild.setAttribute('fill', col); PROC.dot.firstChild.setAttribute('fill', col);
+  });
+})();
+
+/* ---------- Parse row (scenes 6 to 8), on paper ---------- */
+const PARSE = {};
+const RY_P = L.rows.parse;
+F.s6 = cam(1500, RY_P);
+F.s7 = cam(3300, RY_P);
+F.s8 = cam(3990, RY_P);
+
+/* Scene 6: bytes -> characters -> tokens */
+(function buildTokenize() {
+  const grp = g(gMain);
+  const line = '<h1 class="hero">Hello, pixel</h1>';
+  const n = line.length, cw = 40, x0 = 1500 - n * cw / 2;
+  const yB = 1692, yC = 1808;
+  PARSE.line = line;
+  PARSE.labels = [
+    ptxt(grp, x0, yB - 44, 'bytes, from the network', { size: 22, fill: C.leadMid }),
+    ptxt(grp, x0, yC - 52, 'characters, decoded as UTF-8', { size: 22, fill: C.leadMid })
+  ];
+  const bytes = new TextEncoder().encode(line);
+  PARSE.hex = Array.from(bytes).map((b, i) => stext(grp, x0 + (i + 0.5) * cw, yB, b.toString(16).toUpperCase().padStart(2, '0'), { cls: 'mono', size: 16, anchor: 'middle', fill: C.srcP }));
+  PARSE.strip = P.rect(grp, x0 - 4, yC - 32, n * cw + 8, 48, { roughness: 0.6 });
+  const div = g(grp, { stroke: C.leadLight, 'stroke-width': 1, 'stroke-opacity': 0.55 });
+  for (let i = 1; i < n; i++) el('line', { x1: x0 + i * cw, y1: yC - 28, x2: x0 + i * cw, y2: yC + 12 }, div);
+  PARSE.div = div;
+  PARSE.chars = Array.from(line).map((ch, i) => stext(grp, x0 + (i + 0.5) * cw, yC, ch === ' ' ? '\u2423' : ch, { cls: 'mono', size: 22, anchor: 'middle', fill: ch === ' ' ? C.leadLight : C.lead }));
+  hide(PARSE.hex.concat(PARSE.chars, [div]));
+  /* Where the tokenizer is: a highlight cell, a caret and the state it is in. */
+  const STATES = ['data', 'tag open', 'tag name', 'tag name', 'before attribute name', 'attribute name', 'attribute name', 'attribute name', 'attribute name', 'attribute name',
+    'before attribute value', 'attribute value (double-quoted)', 'attribute value (double-quoted)', 'attribute value (double-quoted)', 'attribute value (double-quoted)', 'attribute value (double-quoted)',
+    'after attribute value (quoted)', 'data', 'data', 'data', 'data', 'data', 'data', 'data', 'data', 'data', 'data', 'data', 'data', 'data', 'tag open', 'end tag open', 'tag name', 'tag name'];
+  const hi = el('rect', { x: x0, y: yC - 30, width: cw, height: 44, fill: C.srcP, 'fill-opacity': 0.14, stroke: C.srcP, 'stroke-width': 2 }, grp);
+  const caret = el('path', { d: 'M0 0l-9 15h18z', fill: C.srcP }, grp);
+  const stLab = ptxt(grp, x0, yC + 78, 'tokenizer state', { size: 22, fill: C.leadMid });
+  const st = stext(grp, x0 + 200, yC + 78, 'data', { cls: 'mono', size: 21, fill: C.lead, weight: 500 });
+  PARSE.caretG = [hi, caret, st];
+  hide(PARSE.caretG);
+  PARSE.caret = { u: 0 };
+  let last = -1;
+  addRenderer(() => {
+    const u = PARSE.caret.u;
+    if (u === last) return;
+    last = u;
+    const i = Math.min(n - 1, Math.floor(u));
+    hi.setAttribute('x', x0 + i * cw);
+    caret.setAttribute('transform', 'translate(' + (x0 + (i + 0.5) * cw) + ' ' + (yC + 22) + ')');
+    st.textContent = u >= n ? 'data' : STATES[i];
+  });
+  PARSE.stLab = stLab;
+  /* Token slips, emitted as the caret passes the end of each range. */
+  const slipY = 1985, slipH = 150;
+  const slip = (x, w, kind, lines, pink) => {
+    const sg = g(grp);
+    const box = P.rect(sg, x, slipY, w, slipH, { roughness: 0.7 });
+    const tab = P.rect(sg, x, slipY, 18, slipH, { roughness: 0.5, fill: pink ? C.pinkP : C.leadMid, fillStyle: 'hachure', hachureGap: 4.5, strokeWidth: 1.2 });
+    const t1 = mtxt(sg, x + 40, slipY + 44, kind, { size: 21, weight: 600 });
+    const rest = lines.map((s, k) => (k === 0 ? mtxt : ptxt)(sg, x + 40, slipY + 84 + k * 36, s, k === 0 ? { size: 18, fill: C.leadMid } : { size: 23, fill: pink ? C.pinkP : C.lead }));
+    return { strokes: box.strokes.concat(tab.strokes), texts: [t1].concat(rest) };
+  };
+  const bx = r => [x0 + r[0] * cw, x0 + (r[1] + 1) * cw];
+  PARSE.ranges = [[0, 16], [17, 28], [29, 33]];
+  PARSE.slips = [
+    slip(x0, 520, 'StartTag', ['name: h1', 'class="hero"'], false),
+    slip(x0 + 560, 420, 'Character \u00d7 12', ['data', 'Hello, pixel'], true),
+    slip(x0 + 1020, 340, 'EndTag', ['name: h1'], false)
+  ];
+  /* Brackets from each character range down to its token. */
+  PARSE.brackets = PARSE.ranges.map((r, k) => {
+    const [a, b] = bx(r);
+    const sx = (a + b) / 2, tx = [x0 + 260, x0 + 770, x0 + 1190][k];
+    const br = P.poly(grp, [[a + 4, yC + 28], [a + 4, yC + 38], [b - 4, yC + 38], [b - 4, yC + 28]], { roughness: 0.4, strokeWidth: 1.4 });
+    const ar = P.arrow(grp, sx, yC + 44, tx, slipY - 14, { roughness: 0.6, strokeWidth: 1.4, head: 11 });
+    return strokesOf(br, ar);
+  });
+  PARSE.path6 = codePath(grp, F.s6.cx, F.s6.cy, 'core/html/parser/html_tokenizer.h');
+})();
+
+/* Scene 7: tokens -> tree builder -> DOM (with the stack of open elements) */
+(function buildTreeBuilder() {
+  const grp = g(gMain);
+  const TOK = ['DOCTYPE html', 'StartTag html', 'StartTag head', 'StartTag link', 'StartTag script', 'EndTag script', 'EndTag head', 'StartTag body',
+    'StartTag header', 'Character "pixel.blog"', 'EndTag header', 'StartTag h1', 'Character "Hello, pixel"', 'EndTag h1', 'StartTag p', 'Character "Every pixel\u2026"',
+    'EndTag p', 'StartTag img', 'StartTag iframe', 'EndTag iframe', 'EndTag body', 'EndTag html', 'end of file'];
+  /* Open elements after each token. End tags for body and html do not pop:
+     both stay open until the end of the file. */
+  const STACK = [[], [], ['html'], ['html', 'head'], ['html', 'head'], ['html', 'head', 'script'], ['html', 'head'], ['html'], ['html', 'body'],
+    ['html', 'body', 'header'], ['html', 'body', 'header'], ['html', 'body'], ['html', 'body', 'h1'], ['html', 'body', 'h1'], ['html', 'body'],
+    ['html', 'body', 'p'], ['html', 'body', 'p'], ['html', 'body'], ['html', 'body'], ['html', 'body', 'iframe'], ['html', 'body'], ['html', 'body'], ['html', 'body'], []];
+  const tx = 2572, ty = 1620, tp = 29.5;
+  PARSE.tokHead = ptxt(grp, tx, ty - 22, 'tokens', { size: 22, fill: C.leadMid });
+  PARSE.toks = TOK.map((s, i) => stext(grp, tx, ty + 16 + i * tp, s, { cls: 'mono', size: 16, fill: i === 11 || i === 12 ? C.pinkP : C.lead }));
+  hide(PARSE.toks);
+  const ptr = el('path', { d: 'M0 0l-14 -8v16z', fill: C.lead }, grp);
+  hide(ptr);
+  PARSE.ptr = ptr;
+  /* The stack of open elements. */
+  const sx = 3000, sw = 176, sh = 40, sb = 2230;
+  PARSE.stackHead = ptxt(grp, sx, sb - 5 * (sh + 8) - 26, 'open elements', { size: 22, fill: C.leadMid });
+  PARSE.slots = [0, 1, 2, 3].map(k => P.rect(grp, sx, sb - (k + 1) * (sh + 8), sw, sh, { roughness: 0.5, strokeWidth: 1.4, stroke: C.leadMid }));
+  const slotTxt = [0, 1, 2, 3].map(k => stext(grp, sx + sw / 2, sb - (k + 1) * (sh + 8) + 27, '', { cls: 'mono', size: 18, anchor: 'middle', fill: C.lead }));
+  PARSE.slotTxtG = slotTxt;
+  hide(slotTxt);
+  PARSE.k = { v: 0 };
+  let last = -1;
+  addRenderer(() => {
+    const v = PARSE.k.v;
+    if (v === last) return;
+    last = v;
+    const k = Math.min(TOK.length, Math.floor(v));
+    const stk = STACK[k];
+    slotTxt.forEach((t, j) => { t.textContent = stk[j] || ''; });
+    const ki = Math.min(TOK.length - 1, Math.max(0, k - 1));
+    ptr.setAttribute('transform', 'translate(' + (tx - 8) + ' ' + (ty + 10 + ki * tp) + ')');
+  });
+  /* The DOM, drawn as an indented tree: [name, depth, token, text, text token] */
+  const ROWS = [
+    ['#document', 0, 0], ['doctype', 1, 1], ['html', 1, 2], ['head', 2, 3], ['link', 3, 4], ['script', 3, 5], ['body', 2, 8],
+    ['header', 3, 9, 'pixel.blog', 10], ['h1', 3, 12, 'Hello, pixel', 13], ['p', 3, 15, 'Every pixel\u2026', 16], ['img', 3, 18], ['iframe', 3, 19]
+  ];
+  const dx = 3240, dy = 1612, rp = 50, ind = 46;
+  PARSE.domHead = ptxt(grp, dx, dy - 24, 'the DOM', { size: 22, fill: C.leadMid });
+  PARSE.ws = ptxt(grp, dx + 120, dy - 24, '(whitespace text nodes not shown)', { size: 19, fill: C.leadLight });
+  const nodeAt = (row, name, depth, idx, text, pink, color, tidx) => {
+    const x = dx + depth * ind, y = dy + row * rp;
+    const w = Math.max(64, name.length * 18 * MONO_ADV + 28);
+    const ng = g(grp);
+    const box = P.rect(ng, x, y, w, 36, { roughness: 0.55, strokeWidth: 1.5, stroke: color || C.lead });
+    const lab = mtxt(ng, x + w / 2, y + 25, name, { size: 18, anchor: 'middle', fill: color || C.lead });
+    let conn = null;
+    if (depth > 0) conn = P.poly(ng, [[dx + (depth - 1) * ind + 20, y - rp + 38], [dx + (depth - 1) * ind + 20, y + 18], [x - 2, y + 18]], { roughness: 0.35, strokeWidth: 1.2, stroke: color || C.leadMid });
+    let tnode = null;
+    if (text) {
+      const tl0 = P.line(ng, x + w + 4, y + 18, x + w + 34, y + 18, { roughness: 0.3, strokeWidth: 1.2, strokeLineDash: [5, 5], stroke: C.leadMid });
+      const tt = ptxt(ng, x + w + 42, y + 26, '\u201c' + text + '\u201d', { size: 22, fill: pink ? C.pinkP : C.srcP });
+      tnode = { strokes: tl0.strokes, t: tt };
+    }
+    return { strokes: (conn ? conn.strokes : []).concat(box.strokes), t: lab, tnode: tnode, idx: idx, tidx: tidx, x: x, y: y, w: w };
+  };
+  PARSE.nodes = ROWS.map((r, i) => nodeAt(i, r[0], r[1], r[2], r[3], r[0] === 'h1', null, r[4]));
+  PARSE.nodeAt = nodeAt;
+  PARSE.ntok = TOK.length;
+  PARSE.path7 = codePath(grp, F.s7.cx, F.s7.cy, 'core/html/parser/html_tree_builder.h');
+})();
+
+/* Scene 8: JavaScript changes the DOM; it shares the main thread */
+(function buildDomApi() {
+  const grp = g(gMain);
+  const x = 4040, y = 1600, w = 690, h = 206;
+  PARSE.jsBox = P.rect(grp, x, y, w, h, { roughness: 0.7 });
+  PARSE.jsName = ptxt(grp, x + 22, y + 40, 'app.js', { size: 23, fill: C.leadMid });
+  PARSE.jsHi = el('rect', { x: x + 12, y: y + 58, width: w - 24, height: 32, rx: 4, fill: C.mainP, 'fill-opacity': 0.16 }, grp);
+  hide(PARSE.jsHi);
+  PARSE.jsLines = SRC_JS.map((s, i) => mtxt(grp, x + 24, y + 81 + i * 32, s, { size: 17 }));
+  /* The new node, created by the script. */
+  PARSE.badge = PARSE.nodeAt(12, 'div.badge', 3, 0, 'new', false, C.mainP);
+  /* The main thread: tasks run one after another; frames have deadlines. */
+  const lx = 4040, ly = 2000, fw = 300;
+  PARSE.laneLab = ptxt(grp, lx, ly - 64, 'main thread', { size: 24, fill: C.mainP });
+  PARSE.laneBase = P.line(grp, lx, ly + 58, lx + 700, ly + 58, { roughness: 0.4, stroke: C.mainP, strokeWidth: 1.6 });
+  PARSE.ticks = [0, 1, 2].map(k => P.line(grp, lx + k * fw, ly - 26, lx + k * fw, ly + 70, { roughness: 0.3, strokeWidth: 1.3, stroke: C.leadMid }));
+  PARSE.tickLab = ptxt(grp, lx + fw + 8, ly - 32, 'next frame due', { size: 19, fill: C.leadMid });
+  const segs = [['script', 80], ['style', 66], ['layout', 74], ['paint', 58]];
+  PARSE.segs = segs.map(s => {
+    const r = el('rect', { x: lx, y: ly, width: s[1], height: 50, fill: 'url(#pHatchG)', stroke: C.mainP, 'stroke-width': 1.6 }, grp);
+    const t = stext(grp, lx, ly + 31, s[0], { cls: 'mono', size: 16, anchor: 'middle', fill: C.lead });
+    return { r: r, t: t, w: s[1] };
+  });
+  hide(PARSE.segs.map(s => [s.r, s.t]).flat());
+  PARSE.long = { len: 80 };
+  let last = -1;
+  addRenderer(() => {
+    const len = PARSE.long.len;
+    if (len === last) return;
+    last = len;
+    let cx = lx;
+    PARSE.segs.forEach((s, k) => {
+      const wk = k === 0 ? len : s.w;
+      s.r.setAttribute('x', fmt(cx + 1, 2)); s.r.setAttribute('width', fmt(wk - 2, 2));
+      s.t.setAttribute('x', fmt(cx + wk / 2, 2));
+      cx += wk;
+    });
+  });
+  PARSE.late = P.path(grp, 'M' + (lx + fw - 16) + ' ' + (ly + 84) + 'l32 32m0 -32l-32 32', { stroke: C.pinkP, strokeWidth: 2.4, roughness: 0.4 });
+  PARSE.lateLab = ptxt(grp, lx + fw + 26, ly + 112, 'a long script makes the frame late', { size: 21, fill: C.pinkP });
+})();
+pattern('pHatchG', 9, 9, p => { p.setAttribute('patternTransform', 'rotate(-40)'); el('rect', { width: 9, height: 9, fill: C.mainP, 'fill-opacity': 0.07 }, p); el('line', { x1: 0, y1: 0, x2: 0, y2: 9, stroke: C.mainP, 'stroke-width': 1.3, 'stroke-opacity': 0.55 }, p); });
+
+SC[6] = t => {
+  titleOut(4, t);
+  camTo(F.s6, t + 0.1, 2.0);
+  fadeOut(gRoute, t + 0.15, 0.6);      /* the route is a map layer: gone while inside the chapters */
+  grainTo(0.55, t + 1.1);
+  write(PARSE.labels[0], t + 1.25, 0.5);
+  fadeIn(PARSE.hex, t + 1.35, 0.2, { stagger: 0.012 });
+  draw(PARSE.strip.strokes, t + 1.55, 0.5);
+  write(PARSE.labels[1], t + 1.65, 0.5);
+  fadeIn(PARSE.div, t + 1.75, 0.3);
+  fadeIn(PARSE.chars, t + 1.75, 0.2, { stagger: 0.012 });
+  write(PARSE.stLab, t + 2.0, 0.4);
+  fadeIn(PARSE.caretG, t + 2.1, 0.2);
+  const c0 = t + 2.15, cd = 1.3, n = PARSE.line.length;
+  tl.to(PARSE.caret, { u: n, duration: cd, ease: E.lin }, c0);
+  PARSE.slips.forEach((s, k) => {
+    const at = c0 + cd * (PARSE.ranges[k][1] + 1) / n;
+    draw(PARSE.brackets[k], at - 0.2, 0.3);
+    draw(s.strokes, at - 0.05, 0.4);
+    write(s.texts, at + 0.05, 0.3, 0.06);
+  });
+  fadeOut(PARSE.caretG.slice(0, 2), c0 + cd + 0.05, 0.25);
+  write(PARSE.path6, t + 3.35, 0.5);
+  titleIn(5, t + 2.0);
+};
+SC[7] = t => {
+  titleOut(5, t);
+  camTo(F.s7, t + 0.1, 1.5);
+  write(PARSE.tokHead, t + 0.9, 0.4);
+  fadeIn(PARSE.toks, t + 0.95, 0.25, { stagger: 0.022 });
+  write(PARSE.stackHead, t + 1.1, 0.4);
+  drawEach(PARSE.slots, t + 1.15, 0.35, 0.05);
+  fadeIn(PARSE.slotTxtG.concat(PARSE.ptr), t + 1.35, 0.2);
+  write([PARSE.domHead, PARSE.ws], t + 1.2, 0.4, 0.2);
+  const k0 = t + 1.4, kd = 2.0, nt = PARSE.ntok + 1;
+  tl.to(PARSE.k, { v: nt - 2, duration: kd * (nt - 2) / nt, ease: E.lin }, k0);
+  PARSE.nodes.forEach(nd => {
+    const at = k0 + kd * nd.idx / nt;
+    draw(nd.strokes, at, 0.3);
+    write(nd.t, at + 0.1, 0.25);
+    if (nd.tnode) { const a2 = k0 + kd * nd.tidx / nt; draw(nd.tnode.strokes, a2, 0.2); write(nd.tnode.t, a2 + 0.05, 0.3); }
+  });
+  write(PARSE.path7, t + 3.0, 0.4);
+  titleIn(6, t + 1.1);
+};
+SC[8] = t => {
+  titleOut(6, t);
+  camTo(F.s8, t + 0.1, 1.3);
+  draw(PARSE.jsBox.strokes, t + 0.7, 0.5);
+  write(PARSE.jsName, t + 0.85, 0.35);
+  write(PARSE.jsLines, t + 0.95, 0.35, 0.1);
+  fadeIn(PARSE.jsHi, t + 1.45, 0.15);
+  [1, 2, 3].forEach(k => tl.to(PARSE.jsHi, { attr: { y: 1600 + 58 + k * 32 }, duration: 0.18, ease: E.io }, t + 1.45 + k * 0.26));
+  const b = PARSE.badge;
+  draw(b.strokes, t + 2.3, 0.35);
+  write(b.t, t + 2.4, 0.3);
+  draw(b.tnode.strokes, t + 2.55, 0.15);
+  write(b.tnode.t, t + 2.6, 0.3);
+  fadeOut(PARSE.jsHi, t + 2.4, 0.3);
+  write(PARSE.laneLab, t + 1.5, 0.4);
+  drawEach([PARSE.laneBase].concat(PARSE.ticks), t + 1.55, 0.4, 0.04);
+  write(PARSE.tickLab, t + 1.8, 0.4);
+  fadeIn(PARSE.segs.map(s => [s.r, s.t]).flat(), t + 1.7, 0.3, { stagger: 0.06 });
+  tl.to(PARSE.long, { len: 360, duration: 0.7, ease: E.io }, t + 2.5);
+  draw(PARSE.late.strokes, t + 3.05, 0.25);
+  write(PARSE.lateLab, t + 3.1, 0.4);
+  titleIn(7, t + 0.9);
+};
+
+/* ---------- Style row (scenes 9 to 11), on paper ---------- */
+const STY = {};
+const RY_S = L.rows.style;
+F.s9 = cam(1500, RY_S);
+F.s10 = cam(3300, RY_S);
+F.s11 = cam(5100, RY_S);
+const tick = (parent, x, y, o) => P.path(parent, 'M' + x + ' ' + y + 'l7 8l15 -19', Object.assign({ roughness: 0.4, strokeWidth: 2.2, stroke: C.lead }, o));
+
+/* Scene 9: rules in buckets; candidates only; right-to-left matching */
+(function buildMatch() {
+  const grp = g(gMain);
+  STY.head9 = ptxt(grp, 800, 2912, 'rules, sorted into buckets by their rightmost part', { size: 22, fill: C.leadMid });
+  const bucket = (y, h, label, rules) => {
+    const b = pbox(grp, 800, y, 600, h, null);
+    const lab = ptxt(grp, 824, y + 38, label, { size: 22, fill: C.leadMid });
+    const rs = rules.map((r, i) => mtxt(grp, 830, y + 84 + i * 42, r, { size: 19, fill: r.startsWith('.hero') || r.startsWith('h1') ? C.lead : C.leadMid, style: 'white-space: pre' }));
+    rs.forEach(t => t.setAttribute('style', 'white-space: pre'));
+    return { b: b, lab: lab, rs: rs };
+  };
+  STY.tag = bucket(2940, 250, 'by tag name', ['body   { \u2026 }', 'header { \u2026 }', 'h1     { color: black; \u2026 }', 'img    { \u2026 }']);
+  STY.cls = bucket(3222, 166, 'by class', ['.hero  { color: #ff2e88; }', '.badge { \u2026 }']);
+  STY.elHead = ptxt(grp, 1560, 2912, 'elements', { size: 22, fill: C.leadMid });
+  STY.els = ['body', 'header', 'h1.hero', 'p', 'img', 'iframe', 'div.badge'].map((s, i) => {
+    const pink = s === 'h1.hero';
+    return pbox(grp, 1560, 2940 + i * 52, 210, 38, s, { pen: { stroke: pink ? C.pinkP : C.lead, strokeWidth: pink ? 2 : 1.5, roughness: 0.5 }, fill: pink ? C.pinkP : C.lead });
+  });
+  const hy = 2940 + 2 * 52 + 19;
+  STY.cand = [
+    P.curve(grp, [[1552, hy], [1470, hy + 4], [1408, 3100]], { roughness: 0.5, strokeWidth: 1.6, stroke: C.pinkP }),
+    P.curve(grp, [[1552, hy + 6], [1470, 3180], [1408, 3300]], { roughness: 0.5, strokeWidth: 1.6, stroke: C.pinkP })
+  ];
+  STY.checks = [tick(grp, 1350, 3096), tick(grp, 1350, 3296, { stroke: C.pinkP })];
+  STY.candLab = ptxt(grp, 1790, hy + 8, 'checks only these two', { size: 21, fill: C.pinkP });
+  /* Right to left. */
+  const ex = 1560, ey = 3440;
+  STY.exLab = ptxt(grp, ex, ey - 62, 'read right to left', { size: 21, fill: C.leadMid });
+  STY.ex = mtxt(grp, ex, ey, 'body .hero', { size: 30, weight: 500 });
+  const ew = 10 * 30 * MONO_ADV;
+  STY.exArrow = P.arrow(grp, ex + ew, ey - 44, ex + 6, ey - 44, { roughness: 0.5, strokeWidth: 1.6, head: 12 });
+  STY.steps = [ptxt(grp, ex, ey + 50, '1  does it have class hero?', { size: 22 }), ptxt(grp, ex, ey + 92, '2  is some ancestor a body?', { size: 22 })];
+  STY.stepChecks = [tick(grp, ex + 330, ey + 44), tick(grp, ex + 330, ey + 86)];
+  STY.path9 = codePath(grp, F.s9.cx, F.s9.cy, 'core/css/selector_checker.h');
+})();
+
+/* Scene 10: the cascade compares declarations criterion by criterion */
+(function buildCascade() {
+  const grp = g(gMain);
+  STY.head10 = ptxt(grp, 2600, 2912, 'Two rules set color on the h1. Which one wins?', { size: 24 });
+  const cols = [2600, 3140, 3310, 3470, 3680];
+  STY.colX = cols;
+  STY.hdr = ['declaration', 'origin', 'layer', 'specificity', 'order'].map((s, i) => ptxt(grp, cols[i], 2985, s, { size: 21, fill: C.leadMid }));
+  STY.lines = [P.line(grp, 2590, 3004, 3800, 3004, { roughness: 0.5, strokeWidth: 1.4 }), P.line(grp, 2590, 3086, 3800, 3086, { roughness: 0.4, strokeWidth: 1, stroke: C.leadMid }), P.line(grp, 2590, 3158, 3800, 3158, { roughness: 0.4, strokeWidth: 1, stroke: C.leadMid })];
+  const rowTxt = (y, cells, pink) => cells.map((s, i) => mtxt(grp, cols[i], y, s, { size: 19, fill: pink && i === 0 ? C.pinkP : C.lead }));
+  STY.r1 = rowTxt(3058, ['h1 { color: black }', 'author', 'none', '0,0,1', '3rd']);
+  STY.r2 = rowTxt(3132, ['.hero { color: #ff2e88 }', 'author', 'none', '0,1,0', '4th'], true);
+  STY.ties = [1, 2].map(i => ptxt(grp, cols[i] + 104, 3100, '=', { size: 26, fill: C.leadMid }));
+  STY.tieLab = ptxt(grp, 3140, 3200, 'tie, tie, then specificity decides', { size: 21, fill: C.leadMid });
+  STY.win = P.ellipse(grp, cols[3] + 34, 3124, 112, 48, { roughness: 0.9, strokeWidth: 2.2, stroke: C.pinkP });
+  STY.strike = P.line(grp, 2596, 3052, 2596 + 19 * 19 * MONO_ADV, 3050, { roughness: 0.5, strokeWidth: 2 });
+  STY.under = P.line(grp, 2598, 3142, 2598 + 24 * 19 * MONO_ADV, 3144, { roughness: 0.5, strokeWidth: 2.2, stroke: C.pinkP });
+  STY.res = mtxt(grp, 2600, 3270, 'color: #ff2e88', { size: 28, weight: 500, fill: C.pinkP });
+  STY.resNote = ptxt(grp, 2600 + 14 * 28 * MONO_ADV + 30, 3270, 'so the heading is pink', { size: 24 });
+  /* Origin decides before specificity. */
+  STY.ex2 = ptxt(grp, 2600, 3380, 'font-size on the same h1:', { size: 21, fill: C.leadMid });
+  STY.ex2a = mtxt(grp, 2600, 3425, 'browser default  h1 { font-size: 2em }', { size: 18, fill: C.leadMid });
+  STY.ex2b = mtxt(grp, 2600, 3465, 'author           h1 { font-size: 4rem }', { size: 18 });
+  [STY.ex2a, STY.ex2b].forEach(t => t.setAttribute('style', 'white-space: pre'));
+  STY.ex2s = P.line(grp, 2596, 3419, 2600 + 38 * 18 * MONO_ADV, 3417, { roughness: 0.5, strokeWidth: 1.8 });
+  STY.ex2n = ptxt(grp, 2600, 3520, 'here the origin decides: the page beats the browser defaults', { size: 21 });
+  STY.path10 = codePath(grp, F.s10.cx, F.s10.cy, 'core/css/resolver/style_cascade.h');
+})();
+
+/* Scene 11: computed values, with shared groups of fields */
+(function buildComputed() {
+  const grp = g(gMain);
+  const x = 4420, y = 2900, w = 700;
+  STY.card = P.rect(grp, x, y, w, 470, { roughness: 0.7 });
+  STY.band = P.rect(grp, x, y, w, 58, { roughness: 0.4, strokeWidth: 1, fill: C.leadMid, fillStyle: 'hachure', hachureGap: 7 });
+  STY.cardT = mtxt(grp, x + 24, y + 38, 'ComputedStyle', { size: 22, weight: 600 });
+  STY.cardS = ptxt(grp, x + 24 + 13 * 22 * MONO_ADV + 16, y + 38, 'for the h1', { size: 22 });
+  const rows = [['display', 'block', 'block'], ['color', '#ff2e88', 'rgb(255 46 136)'], ['font-size', '4rem', '64px'], ['font-weight', 'bold', '700'], ['margin-top', '0.67em', '42.88px']];
+  STY.props = []; STY.specs = []; STY.arrows = []; STY.comps = [];
+  rows.forEach((r, i) => {
+    const yy = y + 110 + i * 52;
+    STY.props.push(mtxt(grp, x + 30, yy, r[0], { size: 19 }));
+    STY.specs.push(mtxt(grp, x + 262, yy, r[1], { size: 19, fill: C.leadMid }));
+    STY.arrows.push(P.arrow(grp, x + 420, yy - 7, x + 462, yy - 7, { roughness: 0.4, strokeWidth: 1.4, head: 9 }));
+    STY.comps.push(mtxt(grp, x + 482, yy, r[2], { size: 19, weight: 500, fill: i === 1 ? C.pinkP : C.lead }));
+  });
+  STY.more = ptxt(grp, x + 30, y + 110 + 5 * 52 + 4, '+ hundreds more properties', { size: 22, fill: C.leadMid });
+  /* Sharing: two styles point at one group of identical fields. */
+  const sx = 5250;
+  STY.pCard = P.rect(grp, sx, y, 520, 150, { roughness: 0.7 });
+  STY.pT = mtxt(grp, sx + 22, y + 40, 'ComputedStyle', { size: 20, weight: 600 });
+  STY.pS = ptxt(grp, sx + 22 + 13 * 20 * MONO_ADV + 14, y + 40, 'for the p', { size: 21 });
+  STY.pRows = [mtxt(grp, sx + 26, y + 84, 'font-size    16px', { size: 18 }), mtxt(grp, sx + 26, y + 120, 'margin-top   16px', { size: 18 })];
+  STY.pRows.forEach(t => t.setAttribute('style', 'white-space: pre'));
+  const gy = 3190;
+  STY.g1 = pbox(grp, sx, gy, 240, 64, 'font: 64px bold', { size: 18 });
+  STY.g2 = pbox(grp, sx + 280, gy, 240, 64, 'font: 16px', { size: 18 });
+  STY.g3 = pbox(grp, sx + 40, gy + 150, 440, 64, 'background, borders: defaults', { size: 18, pen: { stroke: C.lead, strokeWidth: 2.4 } });
+  STY.gArrows = [
+    P.carrow(grp, [[x + w + 6, 3060], [5190, 3120], [sx + 90, gy - 8]], { roughness: 0.5, strokeWidth: 1.4 }),
+    P.arrow(grp, sx + 400, y + 156, sx + 400, gy - 8, { roughness: 0.5, strokeWidth: 1.4 }),
+    P.carrow(grp, [[x + w + 6, 3250], [5180, 3330], [sx + 36, gy + 176]], { roughness: 0.5, strokeWidth: 1.4 }),
+    P.carrow(grp, [[sx + 510, y + 150], [5810, 3240], [sx + 486, gy + 176]], { roughness: 0.5, strokeWidth: 1.4 })
+  ];
+  STY.shared = ptxt(grp, sx + 40, gy + 262, 'one copy, shared by both', { size: 22 });
+  STY.path11 = codePath(grp, F.s11.cx, F.s11.cy, 'core/style/computed_style.h');
+})();
+
+SC[9] = t => {
+  titleOut(7, t);
+  camTo(F.s9, t + 0.1, 1.9);
+  write(STY.head9, t + 1.1, 0.5);
+  [STY.tag, STY.cls].forEach((b, i) => {
+    draw(b.b.strokes, t + 1.2 + i * 0.2, 0.45);
+    write(b.lab, t + 1.35 + i * 0.2, 0.35);
+    write(b.rs, t + 1.5 + i * 0.2, 0.3, 0.06);
+  });
+  write(STY.elHead, t + 1.6, 0.35);
+  STY.els.forEach((e, i) => penIn(e, t + 1.65 + i * 0.05, 0.3));
+  drawEach(STY.cand, t + 2.4, 0.4, 0.15);
+  write(STY.candLab, t + 2.5, 0.4);
+  drawEach(STY.checks, t + 2.8, 0.2, 0.12);
+  write([STY.exLab, STY.ex], t + 2.7, 0.35, 0.1);
+  draw(STY.exArrow.strokes, t + 2.95, 0.35, 0, E.lin);
+  write(STY.steps, t + 3.15, 0.35, 0.2);
+  drawEach(STY.stepChecks, t + 3.45, 0.2, 0.2);
+  write(STY.path9, t + 3.3, 0.4);
+  titleIn(8, t + 1.7);
+};
+SC[10] = t => {
+  titleOut(8, t);
+  camTo(F.s10, t + 0.1, 1.4);
+  write(STY.head10, t + 0.8, 0.5);
+  drawEach(STY.lines, t + 0.9, 0.4, 0.08);
+  write(STY.hdr, t + 0.95, 0.3, 0.05);
+  write(STY.r1, t + 1.15, 0.3, 0.05);
+  write(STY.r2, t + 1.35, 0.3, 0.05);
+  write(STY.ties, t + 1.75, 0.2, 0.22);
+  draw(STY.win.strokes, t + 2.15, 0.35);
+  write(STY.tieLab, t + 2.2, 0.4);
+  draw(STY.strike.strokes, t + 2.45, 0.25);
+  draw(STY.under.strokes, t + 2.5, 0.3);
+  write([STY.res, STY.resNote], t + 2.6, 0.35, 0.2);
+  write([STY.ex2, STY.ex2a, STY.ex2b], t + 2.75, 0.3, 0.08);
+  draw(STY.ex2s.strokes, t + 3.05, 0.2);
+  write(STY.ex2n, t + 3.05, 0.4);
+  write(STY.path10, t + 3.0, 0.4);
+  titleIn(9, t + 1.0);
+};
+SC[11] = t => {
+  titleOut(9, t);
+  camTo(F.s11, t + 0.1, 1.4);
+  draw(STY.card.strokes, t + 0.8, 0.5);
+  draw(STY.band.strokes, t + 0.95, 0.4);
+  write([STY.cardT, STY.cardS], t + 1.0, 0.35, 0.15);
+  STY.props.forEach((p, i) => write([p, STY.specs[i]], t + 1.2 + i * 0.08, 0.3, 0.06));
+  STY.arrows.forEach((a, i) => { draw(a.strokes, t + 1.75 + i * 0.1, 0.2); write(STY.comps[i], t + 1.85 + i * 0.1, 0.3); });
+  write(STY.more, t + 2.3, 0.4);
+  draw(STY.pCard.strokes, t + 2.1, 0.4);
+  write([STY.pT, STY.pS].concat(STY.pRows), t + 2.2, 0.3, 0.06);
+  [STY.g1, STY.g2, STY.g3].forEach((b, i) => penIn(b, t + 2.4 + i * 0.12, 0.35));
+  drawEach(STY.gArrows, t + 2.55, 0.3, 0.08);
+  write(STY.shared, t + 2.9, 0.4);
+  write(STY.path11, t + 2.9, 0.4);
+  titleIn(10, t + 1.0);
+};
+
+/* ---------- Layout row (scenes 12 to 15), on paper ---------- */
+const LAY = {};
+const RY_L = L.rows.layout;
+F.s12 = cam(1400, RY_L);
+F.s13 = cam(3060, RY_L);
+F.s14 = cam(4720, RY_L);
+F.s15 = cam(6380, RY_L);
+/* An indented tree row: a pencil box with a connector to its parent's spine. */
+function treeRow(parent, x0, y0, rp, ind, row, label, depth, o) {
+  o = o || {};
+  const size = o.size || 18, x = x0 + depth * ind, y = y0 + row * rp, bh = o.bh || 34;
+  const w = o.w || Math.max(60, label.length * size * MONO_ADV + 26);
+  const ng = g(parent);
+  const pen = { roughness: 0.55, strokeWidth: o.sw || 1.5, stroke: o.stroke || C.lead };
+  if (o.dash) pen.strokeLineDash = [7, 6];
+  const box = P.rect(ng, x, y, w, bh, pen);
+  const t = mtxt(ng, x + 13, y + bh / 2 + size * 0.36, label, { size: size, fill: o.fill || C.lead });
+  let conn = null;
+  if (depth > 0 && !o.noConn) conn = P.poly(ng, [[x0 + (depth - 1) * ind + 18, y - rp + bh + 2], [x0 + (depth - 1) * ind + 18, y + bh / 2], [x - 2, y + bh / 2]], { roughness: 0.3, strokeWidth: 1.1, stroke: C.leadMid });
+  return { strokes: (conn ? conn.strokes : []).concat(box.strokes), t: t, x: x, y: y, w: w, h: bh };
+}
+
+/* Scene 12: DOM on the left, layout tree on the right */
+(function buildLayoutTree() {
+  const grp = g(gMain);
+  const y0 = 4236;
+  LAY.domHead = ptxt(grp, 760, y0 - 22, 'the DOM', { size: 22, fill: C.leadMid });
+  LAY.dom = [['html', 0], ['head', 1], ['body', 1], ['header', 2], ['h1', 2], ['p', 2], ['img', 2], ['iframe', 2], ['div.badge', 2]]
+    .map((r, i) => treeRow(grp, 760, y0, 52, 40, i, r[0], r[1], { size: 18 }));
+  const hd = LAY.dom[1];
+  LAY.headX = P.line(grp, hd.x - 8, hd.y + 18, hd.x + hd.w + 8, hd.y + 16, { roughness: 0.5, strokeWidth: 2.2 });
+  LAY.headNote = ptxt(grp, hd.x + hd.w + 22, hd.y + 25, 'display: none, so no box', { size: 20, fill: C.leadMid });
+  LAY.ltHead = ptxt(grp, 1300, y0 - 22, 'the layout tree', { size: 22, fill: C.leadMid });
+  const LT = [['LayoutView', 0], ['LayoutBlockFlow html', 1], ['LayoutBlockFlow body', 2], ['LayoutBlockFlow header', 3], ['LayoutBlockFlow h1', 3], ['LayoutText', 4, 'pink'],
+    ['LayoutBlockFlow p', 3], ['LayoutText', 4], ['LayoutBlockFlow (anonymous)', 3, 'anon'], ['LayoutImage img', 4], ['LayoutIFrame iframe', 4], ['LayoutBlockFlow div.badge', 3]];
+  LAY.lt = LT.map((r, i) => treeRow(grp, 1300, y0, 46, 34, i, r[0], r[1], { size: 16, bh: 32, stroke: r[2] === 'pink' ? C.pinkP : C.lead, fill: r[2] === 'pink' ? C.pinkP : C.lead, dash: r[2] === 'anon', sw: r[2] === 'anon' ? 1.9 : 1.4 }));
+  const an = LAY.lt[8];
+  LAY.anonNote = ptxt(grp, an.x + an.w + 22, an.y + 22, 'not in the DOM: it wraps', { size: 20, fill: C.leadMid });
+  LAY.anonNote2 = ptxt(grp, an.x + an.w + 22, an.y + 48, 'the inline img and iframe', { size: 20, fill: C.leadMid });
+  LAY.path12 = codePath(grp, F.s12.cx, F.s12.cy, 'core/layout/layout_object.h');
+})();
+
+/* Scene 13: widths flow down, heights flow back up */
+(function buildConstraints() {
+  const grp = g(gMain);
+  const bx = 2800, by = 4300, bw = 640;
+  const B = PAGE.badge;
+  const kids = [['h1', 0, 77], ['p', 120, 38], ['anonymous', 174, 164], ['div.badge', 338, B.h, B.x - PAGE.body.x, B.w]];
+  const bh = 338 + B.h;
+  LAY.vp = P.line(grp, 2380, 4218, 3740, 4218, { roughness: 0.4, strokeWidth: 1.2, stroke: C.leadMid });
+  LAY.vpT = ptxt(grp, 2380, 4206, 'the viewport offers 1920px', { size: 20, fill: C.leadMid });
+  LAY.wDim = P.line(grp, bx, by - 30, bx + bw, by - 30, { roughness: 0.3, strokeWidth: 1.4 });
+  LAY.wEnds = [P.line(grp, bx, by - 42, bx, by - 18, { roughness: 0.2, strokeWidth: 1.4 }), P.line(grp, bx + bw, by - 42, bx + bw, by - 18, { roughness: 0.2, strokeWidth: 1.4 })];
+  LAY.wT = mtxt(grp, bx + bw / 2, by - 40, 'body: 640 wide (max-width)', { size: 17, anchor: 'middle' });
+  LAY.body = P.rect(grp, bx, by, bw, bh, { roughness: 0.6, strokeWidth: 1.8 });
+  LAY.kids = kids.map((k, i) => {
+    const y = by + k[1], dash = k[0] === 'anonymous';
+    const pen = { roughness: 0.55, strokeWidth: 1.4, fill: i === 0 ? C.pinkP : C.leadLight, fillStyle: 'hachure', hachureGap: 9, fillWeight: 0.8 };
+    if (dash) pen.strokeLineDash = [7, 6];
+    const narrow = k[3] !== undefined;
+    const r = narrow ? P.rect(grp, bx + k[3] + 2, y + 2, k[4] - 4, k[2] - 4, Object.assign(pen, { fill: C.lead, hachureGap: 5 }))
+      : P.rect(grp, bx + 6, y + 3, bw - 12, k[2] - 6, pen);
+    const t = narrow ? mtxt(grp, bx + k[3] - 14, y + 17, k[0], { size: 16, anchor: 'end' })
+      : mtxt(grp, bx + 20, y + Math.min(k[2] - 8, 26), k[0], { size: 16, fill: i === 0 ? C.pinkP : C.lead });
+    const ay = y + Math.min(k[2] / 2, 22);
+    const down = P.arrow(grp, bx - 62, ay, bx - 6, ay, { roughness: 0.3, strokeWidth: 1.3, head: 9, stroke: C.leadMid });
+    const dimX = bx + bw + 26;
+    const dim = P.line(grp, dimX, y + 2, dimX, y + k[2] - 2, { roughness: 0.2, strokeWidth: 1.3 });
+    const dt = mtxt(grp, dimX + 14, y + k[2] / 2 + 6, k[2] + 'px', { size: 16 });
+    return { r: r, t: t, down: down, dim: dim, dt: dt };
+  });
+  /* the anonymous block's content */
+  LAY.img = P.rect(grp, bx + 12, by + 180, 228, 150, { roughness: 0.5, strokeWidth: 1.1, stroke: C.leadMid });
+  LAY.ifr = P.rect(grp, bx + 252, by + 186, 290, 144, { roughness: 0.5, strokeWidth: 1.1, stroke: C.leadMid });
+  const tx = bx + bw + 120;
+  LAY.hDim = P.line(grp, tx, by, tx, by + bh, { roughness: 0.2, strokeWidth: 1.6 });
+  LAY.hT = mtxt(grp, tx + 14, by + bh / 2 + 6, bh + 'px', { size: 18, weight: 500 });
+  LAY.steps = [
+    ptxt(grp, 2380, 4390, '1  the parent says how', { size: 21 }), ptxt(grp, 2380, 4418, '    much space there is', { size: 21 }),
+    ptxt(grp, 2380, 4478, '2  each child lays itself', { size: 21 }), ptxt(grp, 2380, 4506, '    out and reports its size', { size: 21 }),
+    ptxt(grp, 2380, 4566, '3  the parent places it', { size: 21 }), ptxt(grp, 2380, 4594, '    and sums the heights', { size: 21 })
+  ];
+  LAY.cs = ptxt(grp, 2380, 4330, 'the constraint space', { size: 21, fill: C.leadMid });
+  LAY.warnBox = P.rect(grp, 2380, 4700, 1340, 70, { roughness: 0.7, strokeWidth: 1.5 });
+  LAY.warn = ptxt(grp, 2404, 4744, 'Reading offsetHeight right after changing styles forces this to run early, on the spot.', { size: 21 });
+  LAY.path13 = codePath(grp, F.s13.cx, F.s13.cy, 'core/layout/block_layout_algorithm.h');
+})();
+
+/* Scene 14: characters -> shaped glyphs -> lines */
+(function buildLines() {
+  const grp = g(gMain);
+  const x0 = 4040, word = 'Every pixel', cw = 32;
+  LAY.chHead = ptxt(grp, x0, 4210, 'characters', { size: 20, fill: C.leadMid });
+  LAY.chStrip = P.rect(grp, x0, 4226, word.length * cw, 42, { roughness: 0.5, strokeWidth: 1.3 });
+  LAY.chs = Array.from(word).map((c, i) => stext(grp, x0 + (i + 0.5) * cw, 4256, c === ' ' ? '\u2423' : c, { cls: 'mono', size: 19, anchor: 'middle', fill: c === ' ' ? C.leadLight : C.lead }));
+  hide(LAY.chs);
+  LAY.hbArrow = P.arrow(grp, x0 + word.length * cw + 20, 4247, x0 + word.length * cw + 100, 4247, { roughness: 0.4, strokeWidth: 1.4, head: 10 });
+  LAY.hb = ptxt(grp, x0 + word.length * cw + 116, 4254, 'shaped by HarfBuzz', { size: 21 });
+  /* glyphs with their advances, in the page's own font */
+  const gs = 44, gy = 4350;
+  LAY.glHead = ptxt(grp, x0, 4304, 'glyphs, each with an exact position', { size: 20, fill: C.leadMid });
+  const pf = '400 ' + gs + 'px ' + PAGE_FONT;
+  let gx = x0;
+  LAY.glyphs = []; LAY.adv = [];
+  Array.from(word).forEach((c, i) => {
+    const a = textW(c, pf);
+    if (c !== ' ') { const t = stext(grp, gx, gy, c, { cls: 'page', size: gs, fill: C.lead }); LAY.glyphs.push(t); }
+    LAY.adv.push(el('line', { x1: fmt(gx, 2), y1: gy + 10, x2: fmt(gx, 2), y2: gy + 24, stroke: C.leadMid, 'stroke-width': 1.3 }, grp));
+    gx += a;
+  });
+  LAY.adv.push(el('line', { x1: fmt(gx, 2), y1: gy + 10, x2: fmt(gx, 2), y2: gy + 24, stroke: C.leadMid, 'stroke-width': 1.3 }, grp));
+  LAY.base = el('line', { x1: x0, y1: gy + 17, x2: fmt(gx, 2), y2: gy + 17, stroke: C.leadMid, 'stroke-width': 1 }, grp);
+  hide(LAY.glyphs.concat(LAY.adv, [LAY.base]));
+  LAY.advT = ptxt(grp, gx + 24, gy + 4, 'x positions come from the font', { size: 20, fill: C.leadMid });
+  /* line breaking at 1.5x scale */
+  const s = 1.5, lw = PAGE.p.w * s, ly = 4520, lh = 38;
+  LAY.lbHead = ptxt(grp, x0, 4468, 'the line breaker fills each line up to the available width', { size: 20, fill: C.leadMid });
+  LAY.lbBox = P.rect(grp, x0, ly - 6, lw, lh * PAGE.p.lines.length + 22, { roughness: 0.5, strokeWidth: 1.3, strokeLineDash: [8, 7] });
+  LAY.lbW = mtxt(grp, x0 + lw + 16, ly + 22, '640px', { size: 17, fill: C.leadMid });
+  LAY.lines = PAGE.p.lines.map((ln, i) => stext(grp, x0 + 12, ly + 26 + i * lh, ln, { cls: 'page', size: 16 * s, fill: C.lead }));
+  LAY.lines.forEach(t => writable(t));
+  const breakX = x0 + 12 + textW(PAGE.p.lines[0], '400 ' + (16 * s) + 'px ' + PAGE_FONT);
+  LAY.brk = P.path(grp, 'M' + (breakX + 6) + ' ' + (ly + 4) + 'v 30', { roughness: 0.3, strokeWidth: 2.2, stroke: C.pinkP });
+  LAY.brkT = ptxt(grp, Math.min(breakX - 20, x0 + lw - 170), ly + 118, 'break here: the next word does not fit', { size: 19, fill: C.pinkP });
+  const p2 = mtxt(grp, F.s14.cx + W / 2 - 64, F.s14.cy + H / 2 - 56, 'platform/fonts/shaping/harfbuzz_shaper.h', { size: 16, anchor: 'end', fill: C.leadMid });
+  LAY.path14 = [p2, codePath(grp, F.s14.cx, F.s14.cy, 'core/layout/inline/line_breaker.h')];
+})();
+
+/* Scene 15: the fragment tree, immutable output of layout */
+(function buildFragments() {
+  const grp = g(gMain);
+  const x0 = 5680, y0 = 4270;
+  LAY.frHead = ptxt(grp, x0, y0 - 52, 'fragments: final sizes and offsets', { size: 22, fill: C.leadMid });
+  const nl = PAGE.p.lines.length;
+  const B = PAGE.badge;
+  const rows = [['box body', 0, '640 \u00d7 ' + (338 + B.h), '(640, 48)'], ['box h1', 1, '640 \u00d7 77', '(0, 0)'], ['line', 2, '640 \u00d7 77', '(0, 0)'], ['text "Hello, pixel"', 3, '', '(0, 3)', 'pink']];
+  rows.push(['box p', 1, '640 \u00d7 ' + nl * 19, '(0, 120)']);
+  for (let i = 0; i < nl; i++) rows.push(['line', 2, '640 \u00d7 19', '(0, ' + i * 19 + ')']);
+  rows.push(['box (anonymous)', 1, '640 \u00d7 164', '(0, 174)'], ['box div.badge', 1, B.w + ' \u00d7 ' + B.h, '(' + (B.x - PAGE.body.x) + ', 338)']);
+  LAY.fr = rows.map((r, i) => {
+    const pink = r[4] === 'pink';
+    const n = treeRow(grp, x0, y0, 44, 30, i, r[0], r[1], { size: 16, bh: 32, stroke: pink ? C.pinkP : C.lead, fill: pink ? C.pinkP : C.lead, sw: 1.3 });
+    const cx = x0 + 330;
+    n.sz = r[2] ? mtxt(grp, cx, n.y + 22, r[2], { size: 16, fill: C.leadMid }) : null;
+    n.off = mtxt(grp, cx + 130, n.y + 22, r[3], { size: 16, fill: pink ? C.pinkP : C.leadMid });
+    return n;
+  });
+  LAY.frCols = [ptxt(grp, x0 + 330, y0 - 14, 'size', { size: 20, fill: C.leadMid }), ptxt(grp, x0 + 460, y0 - 14, 'offset', { size: 20, fill: C.leadMid })];
+  /* Immutable: a small padlock; reuse. */
+  const lx = 6720, lyy = 4300;
+  LAY.lock = [P.rect(grp, lx, lyy + 26, 46, 38, { roughness: 0.5, strokeWidth: 1.6, fill: C.leadMid, fillStyle: 'hachure', hachureGap: 5 }), P.path(grp, 'M' + (lx + 9) + ' ' + (lyy + 26) + 'v-10a14 14 0 0 1 28 0v10', { roughness: 0.4, strokeWidth: 1.8 })];
+  LAY.lockT = [ptxt(grp, lx + 62, lyy + 44, 'immutable, so they', { size: 20 }), ptxt(grp, lx + 62, lyy + 70, 'can be cached and reused', { size: 20 })];
+  /* One object, two fragments. */
+  const cy0 = 4560;
+  LAY.colObj = pbox(grp, 6760, cy0, 220, 40, 'one box', { size: 17 });
+  LAY.colFr = [pbox(grp, 6660, cy0 + 110, 190, 90, null), pbox(grp, 6890, cy0 + 110, 190, 90, null)];
+  LAY.colArr = [P.arrow(grp, 6830, cy0 + 44, 6760, cy0 + 104, { roughness: 0.4, strokeWidth: 1.3, head: 9 }), P.arrow(grp, 6910, cy0 + 44, 6980, cy0 + 104, { roughness: 0.4, strokeWidth: 1.3, head: 9 })];
+  LAY.colLines = [0, 1].map(k => [0, 1, 2].map(j => P.line(grp, 6676 + k * 230, cy0 + 132 + j * 22, 6834 + k * 230 - (j === 2 && k === 1 ? 60 : 0), cy0 + 132 + j * 22, { roughness: 0.6, strokeWidth: 1, stroke: C.leadLight }))).flat();
+  LAY.colT = ptxt(grp, 6660, cy0 + 238, 'split across two columns', { size: 20, fill: C.leadMid });
+  LAY.path15 = codePath(grp, F.s15.cx, F.s15.cy, 'core/layout/physical_box_fragment.h');
+})();
+
+SC[12] = t => {
+  titleOut(10, t);
+  camTo(F.s12, t + 0.1, 2.1);
+  write(LAY.domHead, t + 1.4, 0.35);
+  LAY.dom.forEach((n, i) => { draw(n.strokes, t + 1.45 + i * 0.06, 0.3); write(n.t, t + 1.55 + i * 0.06, 0.25); });
+  draw(LAY.headX.strokes, t + 2.2, 0.25);
+  write(LAY.headNote, t + 2.3, 0.4);
+  write(LAY.ltHead, t + 2.0, 0.35);
+  LAY.lt.forEach((n, i) => { draw(n.strokes, t + 2.1 + i * 0.1, 0.3); write(n.t, t + 2.2 + i * 0.1, 0.25); });
+  write([LAY.anonNote, LAY.anonNote2], t + 3.1, 0.4, 0.15);
+  write(LAY.path12, t + 3.4, 0.4);
+  titleIn(11, t + 2.0);
+};
+SC[13] = t => {
+  titleOut(11, t);
+  camTo(F.s13, t + 0.1, 1.4);
+  draw(LAY.vp.strokes, t + 0.8, 0.4); write(LAY.vpT, t + 0.85, 0.4);
+  drawEach([LAY.wDim].concat(LAY.wEnds), t + 1.0, 0.3, 0.05); write(LAY.wT, t + 1.05, 0.35);
+  draw(LAY.body.strokes, t + 1.1, 0.4);
+  write(LAY.cs, t + 1.2, 0.35);
+  write(LAY.steps.slice(0, 2), t + 1.25, 0.3, 0.1);
+  LAY.kids.forEach((k, i) => {
+    const a = t + 1.45 + i * 0.3;
+    draw(k.down.strokes, a, 0.2);
+    draw(k.r.strokes, a + 0.12, 0.3);
+    write(k.t, a + 0.18, 0.2);
+    draw(k.dim.strokes, a + 0.3, 0.15);
+    write(k.dt, a + 0.32, 0.2);
+  });
+  drawEach([LAY.img, LAY.ifr], t + 2.1, 0.3, 0.08);
+  write(LAY.steps.slice(2, 4), t + 1.75, 0.3, 0.1);
+  draw(LAY.hDim.strokes, t + 2.75, 0.25); write(LAY.hT, t + 2.85, 0.3);
+  write(LAY.steps.slice(4), t + 2.6, 0.3, 0.1);
+  draw(LAY.warnBox.strokes, t + 2.95, 0.4); write(LAY.warn, t + 3.05, 0.5);
+  write(LAY.path13, t + 3.2, 0.3);
+  titleIn(12, t + 1.0);
+};
+SC[14] = t => {
+  titleOut(12, t);
+  camTo(F.s14, t + 0.1, 1.4);
+  write(LAY.chHead, t + 0.8, 0.3);
+  draw(LAY.chStrip.strokes, t + 0.85, 0.35);
+  fadeIn(LAY.chs, t + 0.9, 0.15, { stagger: 0.03 });
+  draw(LAY.hbArrow.strokes, t + 1.25, 0.25); write(LAY.hb, t + 1.35, 0.35);
+  write(LAY.glHead, t + 1.45, 0.35);
+  fadeIn(LAY.glyphs, t + 1.55, 0.18, { stagger: 0.035 });
+  fadeIn(LAY.adv.concat([LAY.base]), t + 1.7, 0.2, { stagger: 0.02 });
+  write(LAY.advT, t + 2.0, 0.35);
+  write(LAY.lbHead, t + 2.1, 0.4);
+  draw(LAY.lbBox.strokes, t + 2.2, 0.35); write(LAY.lbW, t + 2.3, 0.25);
+  write(LAY.lines[0], t + 2.4, 0.55);
+  draw(LAY.brk.strokes, t + 2.95, 0.15); write(LAY.brkT, t + 3.0, 0.35);
+  if (LAY.lines[1]) write(LAY.lines.slice(1), t + 3.05, 0.35, 0.2);
+  write(LAY.path14, t + 3.1, 0.3, 0.05);
+  titleIn(13, t + 1.0);
+};
+SC[15] = t => {
+  titleOut(13, t);
+  camTo(F.s15, t + 0.1, 1.4);
+  write(LAY.frHead, t + 0.8, 0.35);
+  write(LAY.frCols, t + 0.9, 0.3, 0.1);
+  LAY.fr.forEach((n, i) => {
+    const a = t + 1.0 + i * 0.12;
+    draw(n.strokes, a, 0.25); write(n.t, a + 0.08, 0.22);
+    if (n.sz) write(n.sz, a + 0.12, 0.22);
+    write(n.off, a + 0.16, 0.22);
+  });
+  drawEach(LAY.lock, t + 2.2, 0.3, 0.1); write(LAY.lockT, t + 2.35, 0.35, 0.12);
+  penIn(LAY.colObj, t + 2.5, 0.3);
+  drawEach(LAY.colArr.concat(LAY.colFr), t + 2.7, 0.25, 0.06);
+  drawEach(LAY.colLines, t + 2.9, 0.12, 0.02);
+  write(LAY.colT, t + 3.0, 0.35);
+  write(LAY.path15, t + 3.0, 0.3);
+  titleIn(14, t + 1.0);
+};
+
+/* ---------- Paint row (scenes 16 to 18), on paper ---------- */
+const PNT = {};
+const RY_N = L.rows.paint;
+F.s16 = cam(1500, RY_N);
+F.s17 = cam(3300, RY_N);
+F.s18 = cam(6230, RY_N);
+
+/* Scene 16: four property trees; content points into them */
+(function buildPropertyTrees() {
+  const grp = g(gMain);
+  const col = [800, 1165, 1530, 1895], y1 = 5575, y2 = 5675, y3 = 5775;
+  const node = (x, y, label, o) => {
+    o = o || {};
+    const w = o.w || 150;
+    const e = P.ellipse(grp, x, y, w, 46, { roughness: 0.8, strokeWidth: 1.5, stroke: o.stroke || C.lead });
+    const t = ptxt(grp, x, y + 7, label, { size: 19, anchor: 'middle', fill: o.stroke || C.lead });
+    return { strokes: e.strokes, t: t, x: x, y: y };
+  };
+  const edge = (a, b) => P.line(grp, a.x, a.y + 23, b.x, b.y - 23, { roughness: 0.4, strokeWidth: 1.2, stroke: C.leadMid });
+  PNT.heads = ['transforms', 'clips', 'effects', 'scrolling'].map((s, i) => ptxt(grp, col[i] + 150, 5512, s, { size: 23, anchor: 'middle', weight: 600 }));
+  const T0 = node(col[0] + 150, y1, 'root'), T1 = node(col[0] + 80, y2, 'page scroll', { w: 150 }), T2 = node(col[0] + 245, y2, 'fixed header', { w: 160 }), T3 = node(col[0] + 80, y3, 'img', { w: 110 });
+  const C0 = node(col[1] + 150, y1, 'root'), C1 = node(col[1] + 150, y2, 'viewport'), C2 = node(col[1] + 150, y3, 'iframe', { w: 120 });
+  const E0 = node(col[2] + 150, y1, 'root'), E1 = node(col[2] + 150, y2, 'badge opacity', { w: 170 });
+  const S0 = node(col[3] + 150, y1, 'root'), S1 = node(col[3] + 150, y2, 'viewport');
+  PNT.trees = [[T0, T1, T2, T3], [C0, C1, C2], [E0, E1], [S0, S1]];
+  PNT.edges = [[edge(T0, T1), edge(T0, T2), edge(T1, T3)], [edge(C0, C1), edge(C1, C2)], [edge(E0, E1)], [edge(S0, S1)]];
+  /* Our heading's text points at one node in each tree. */
+  const hx = 1180, hy = 5920;
+  PNT.h1 = pbox(grp, hx, hy, 190, 42, 'h1 text', { size: 18, pen: { stroke: C.pinkP, strokeWidth: 2 }, fill: C.pinkP });
+  PNT.ptrs = [
+    P.carrow(grp, [[hx + 10, hy], [990, 5840], [T1.x, y2 + 30]], { roughness: 0.5, strokeWidth: 1.5, stroke: C.pinkP, head: 11 }),
+    P.carrow(grp, [[hx + 95, hy - 4], [1300, 5800], [C1.x, y2 + 30]], { roughness: 0.5, strokeWidth: 1.5, stroke: C.pinkP, head: 11 }),
+    P.carrow(grp, [[hx + 180, hy + 4], [1560, 5700], [E0.x - 30, y1 + 26]], { roughness: 0.5, strokeWidth: 1.5, stroke: C.pinkP, head: 11 })
+  ];
+  PNT.state = ptxt(grp, hx + 214, hy + 29, 'its property tree state: page scroll, viewport, root', { size: 21, fill: C.pinkP });
+  PNT.takeBox = P.rect(grp, 800, 6040, 1400, 64, { roughness: 0.7, strokeWidth: 1.5 });
+  PNT.take = ptxt(grp, 824, 6081, 'Change a transform or opacity, and one node changes: no layout, no repaint.', { size: 21 });
+  PNT.path16 = codePath(grp, F.s16.cx, F.s16.cy, 'core/paint/paint_property_tree_builder.h');
+})();
+
+/* Scene 17: paint phases as stacked planes, bottom to top */
+(function buildPaintOrder() {
+  const grp = g(gMain);
+  const px = 2640, pw = 560, ph = 250, sk = 0.5, sy = 0.42;
+  const planeY = [5960, 5830, 5700, 5570];
+  const plane = (i, label, content) => {
+    const pg = g(grp);
+    const y = planeY[i];
+    const q = [[px, y], [px + pw, y], [px + pw + ph * sk, y + ph * sy], [px + ph * sk, y + ph * sy]];
+    const outline = P.poly(pg, q, { closed: true, roughness: 0.6, strokeWidth: 1.5, fill: 'rgba(237,236,230,0.9)', fillStyle: 'solid' });
+    const inner = g(pg, { transform: 'matrix(1 0 ' + sk + ' ' + sy + ' ' + px + ' ' + y + ')' });
+    const bits = content(inner);
+    const num = ptxt(grp, px - 30, y + 44, String(i + 1), { size: 28, anchor: 'end', weight: 600 });
+    const lab = ptxt(grp, px + pw + ph * sk + 40, y + 50, label, { size: 22 });
+    return { strokes: outline.strokes, bits: bits, num: num, lab: lab, g: pg };
+  };
+  PNT.planes = [
+    plane(0, 'backgrounds and borders', g0 => [P.rect(g0, 30, 30, 500, 190, { roughness: 0.5, strokeWidth: 1.2, fill: C.leadLight, fillStyle: 'hachure', hachureGap: 12, fillWeight: 0.8 })]),
+    plane(1, 'floats (none on our page)', g0 => [P.rect(g0, 380, 60, 120, 120, { roughness: 0.6, strokeWidth: 1.1, stroke: C.leadLight, strokeLineDash: [6, 6] })]),
+    plane(2, 'inline content, like text', g0 => { const t = stext(g0, 40, 90, 'Hello, pixel', { cls: 'page', size: 64, weight: 700, fill: C.pinkP }); hide(t); return [t]; }),
+    plane(3, 'outlines', g0 => [P.rect(g0, 26, 26, 508, 198, { roughness: 0.9, strokeWidth: 1.4, strokeLineDash: [2, 7] })])
+  ];
+  /* A positioned element with a z-index paints as one unit. */
+  const zx = 3600, zy = 5488;
+  PNT.zBox = P.rect(grp, zx, zy, 420, 130, { roughness: 0.7, strokeWidth: 1.5 });
+  PNT.zMini = [0, 1, 2].map(k => P.poly(grp, [[zx + 30 + k * 12, zy + 86 - k * 20], [zx + 170 + k * 12, zy + 86 - k * 20], [zx + 200 + k * 12, zy + 104 - k * 20], [zx + 60 + k * 12, zy + 104 - k * 20]], { closed: true, roughness: 0.5, strokeWidth: 1.1 }));
+  PNT.zT = [ptxt(grp, zx + 236, zy + 50, 'z-index: its own', { size: 21 }), ptxt(grp, zx + 236, zy + 78, 'stacking context,', { size: 21 }), ptxt(grp, zx + 236, zy + 106, 'painted as a unit', { size: 21 })];
+  PNT.order = P.arrow(grp, 2585, 6050, 2585, 5600, { roughness: 0.4, strokeWidth: 1.6, head: 12 });
+  PNT.orderT = ptxt(grp, 2575, 6100, 'painted in this order', { size: 20, fill: C.leadMid });
+  PNT.path17 = codePath(grp, F.s17.cx, F.s17.cy, 'core/paint/paint_phase.h');
+})();
+
+/* Scene 18: the display list, grouped in chunks by property tree state */
+(function buildDisplayList() {
+  const grp = g(gMain);
+  /* a small sketch of the page, with numbered items */
+  const sx = 5480, sy = 5520, sw = 560, sh = 400, k = sw / 1000;
+  PNT.sk = P.rect(grp, sx, sy, sw, sh, { roughness: 0.6, strokeWidth: 1.5 });
+  const cx = v => sx + (v - 460) * k * 1.05, cyy = v => sy + 20 + v * k * 1.05;
+  PNT.skItems = [
+    ptxt(grp, sx + 12, sy + 26, 'pixel.blog', { size: 16, fill: C.leadMid }),
+    stext(grp, cx(640), cyy(110), 'Hello, pixel', { cls: 'page', size: 36, weight: 700, fill: C.pinkP }),
+    P.line(grp, cx(640), cyy(172), cx(1240), cyy(172), { roughness: 1, strokeWidth: 1.4, stroke: C.leadMid }),
+    P.line(grp, cx(640), cyy(192), cx(960), cyy(192), { roughness: 1, strokeWidth: 1.4, stroke: C.leadMid }),
+    P.rect(grp, cx(640), cyy(228), 240 * k * 1.05, 160 * k * 1.05, { roughness: 0.6, strokeWidth: 1.2, fill: C.leadLight, fillStyle: 'hachure', hachureGap: 6 }),
+    P.rect(grp, cx(884), cyy(234), 300 * k * 1.05, 154 * k * 1.05, { roughness: 0.6, strokeWidth: 1.2, strokeLineDash: [6, 5] }),
+    P.path(grp, rrPath(cx(1280) - 46, cyy(386), 46, 22, 11), { roughness: 0.4, strokeWidth: 1.6 }),
+    ptxt(grp, cx(1280) - 23, cyy(386) + 16, 'new', { size: 15, anchor: 'middle' })
+  ];
+  hide(PNT.skItems[1]);
+  /* the list itself */
+  const lx = 6370, ly = 5530, lh = 29;
+  PNT.dlHead = ptxt(grp, lx, ly - 18, 'display list', { size: 23, weight: 600 });
+  const chunks = [
+    ['state: root', [['DrawRectOp', 'white background']]],
+    ['state: page scroll', [['DrawTextBlobOp', '"Hello, pixel"', 'pink'], ['DrawTextBlobOp', 'paragraph, line 1'], ['DrawTextBlobOp', 'paragraph, line 2']]],
+    ['state: img transform', [['DrawImageRectOp', 'sunset.jpg']]],
+    ['state: iframe clip', [['foreign content', 'drawn by another process']]],
+    ['state: badge opacity', [['DrawRRectOp', 'the blue pill'], ['DrawTextBlobOp', '"new"']]],
+    ['state: fixed header', [['DrawTextBlobOp', '"pixel.blog"']]]
+  ];
+  PNT.chunks = [];
+  let y = ly + 22;
+  chunks.forEach(ch => {
+    const top = y - 20;
+    const lab = ptxt(grp, lx + 20, y, ch[0], { size: 18, fill: C.leadMid });
+    y += lh - 4;
+    const ops = ch[1].map(op => {
+      const pink = op[2] === 'pink';
+      const t = mtxt(grp, lx + 20, y, op[0], { size: 17, weight: 500, fill: pink ? C.pinkP : C.lead });
+      const a = mtxt(grp, lx + 20 + (op[0].length + 1) * 17 * MONO_ADV, y, op[1], { size: 17, fill: pink ? C.pinkP : C.leadMid });
+      y += lh;
+      return [t, a];
+    }).flat();
+    const br = P.poly(grp, [[lx + 8, top], [lx, top], [lx, y - 18], [lx + 8, y - 18]], { roughness: 0.3, strokeWidth: 1.3 });
+    y += 10;
+    PNT.chunks.push({ lab: lab, ops: ops, br: br });
+  });
+  PNT.listBottom = y;
+  PNT.ours = ptxt(grp, lx + 20, y + 20, 'our pixel is inside the pink command', { size: 20, fill: C.pinkP });
+  PNT.nums = [[0, 5530, 5570], [1, 5520, 5640]];
+  PNT.path18 = codePath(grp, F.s18.cx, F.s18.cy, 'cc/paint/paint_op.h');
+})();
+
+SC[16] = t => {
+  titleOut(14, t);
+  camTo(F.s16, t + 0.1, 2.1);
+  write(PNT.heads, t + 1.4, 0.35, 0.08);
+  PNT.trees.forEach((tr, i) => tr.forEach((n, j) => { const a = t + 1.55 + i * 0.12 + j * 0.12; draw(n.strokes, a, 0.3); write(n.t, a + 0.1, 0.25); }));
+  PNT.edges.forEach((es, i) => drawEach(es, t + 1.7 + i * 0.12, 0.2, 0.12));
+  penIn(PNT.h1, t + 2.45, 0.3);
+  drawEach(PNT.ptrs, t + 2.65, 0.35, 0.12);
+  write(PNT.state, t + 2.9, 0.45);
+  draw(PNT.takeBox.strokes, t + 3.2, 0.35); write(PNT.take, t + 3.3, 0.5);
+  write(PNT.path16, t + 3.4, 0.3);
+  titleIn(15, t + 2.0);
+};
+SC[17] = t => {
+  titleOut(15, t);
+  camTo(F.s17, t + 0.1, 1.4);
+  draw(PNT.order.strokes, t + 0.8, 0.9, 0, E.lin);
+  write(PNT.orderT, t + 0.85, 0.35);
+  PNT.planes.forEach((p, i) => {
+    const a = t + 0.9 + i * 0.36;
+    draw(p.strokes, a, 0.35);
+    write(p.num, a + 0.05, 0.2);
+    p.bits.forEach(b => { if (b.strokes) draw(b.strokes, a + 0.2, 0.3); else fadeIn(b, a + 0.2, 0.3); });
+    write(p.lab, a + 0.15, 0.3);
+  });
+  draw(PNT.zBox.strokes, t + 2.5, 0.35);
+  drawEach(PNT.zMini, t + 2.6, 0.2, 0.08);
+  write(PNT.zT, t + 2.7, 0.3, 0.1);
+  write(PNT.path17, t + 3.0, 0.3);
+  titleIn(16, t + 1.0);
+};
+SC[18] = t => {
+  titleOut(16, t);
+  camTo(F.s18, t + 0.1, 1.6);
+  draw(PNT.sk.strokes, t + 0.9, 0.4);
+  PNT.skItems.forEach((it, i) => { const a = t + 1.0 + i * 0.06; if (it.strokes) draw(it.strokes, a, 0.3); else if (it.__clip) write(it, a, 0.3); else fadeIn(it, a, 0.3); });
+  write(PNT.dlHead, t + 1.2, 0.35);
+  PNT.chunks.forEach((c, i) => {
+    const a = t + 1.4 + i * 0.25;
+    draw(c.br.strokes, a, 0.2);
+    write(c.lab, a, 0.2);
+    write(c.ops, a + 0.08, 0.22, 0.04);
+  });
+  write(PNT.ours, t + 3.05, 0.4);
+  write(PNT.path18, t + 3.1, 0.3);
+  titleIn(17, t + 1.1);
+};
+
+/* ---------- Dark side, band 1 (scenes 19 to 21): commit, layers ---------- */
+const LYR = {};
+const RY_1 = L.ds.ds1;
+F.s19 = cam(7050, RY_1);
+F.s20 = cam(8420, RY_1);
+F.s21 = cam(8520, RY_1 + 10);
+
+/* Scene 19: the copy on the compositor side, and the two thread lanes */
+(function buildCommit() {
+  const grp = g(gLight);
+  const x = 7330, y = 5500, w = 470, h = 440;
+  LYR.copyFill = el('path', { d: rrPath(x, y, w, h, 12), fill: '#0d0b05', 'fill-opacity': 0.9 }, grp);
+  LYR.copyFrame = N.rect(grp, x, y, w, h, C.comp, { r: 12, w: 1.4 });
+  LYR.copyT = mono(grp, x + 20, y + 36, 'on the compositor thread', { size: 17, fill: C.comp, weight: 500 });
+  const rows = ['display list', 'root', 'page scroll', 'img transform', 'iframe clip', 'badge opacity', 'fixed header', 'property trees'];
+  LYR.copyRows = rows.map((s, i) => {
+    const yy = y + 78 + i * 38 + (i === 7 ? 18 : 0);
+    const head = i === 0 || i === 7;
+    const bar = head ? null : el('path', { d: rrPath(x + 20, yy - 18, 16, 22, 3), fill: C.comp, 'fill-opacity': 0.55 }, grp);
+    const t = mono(grp, x + (head ? 20 : 48), yy, head ? s : 'chunk: ' + s, { size: head ? 17 : 15, fill: head ? C.ink : '#e8d6a8' });
+    return bar ? [bar, t] : [t];
+  }).flat();
+  LYR.copyAll = [LYR.copyFill, LYR.copyT].concat(LYR.copyRows);
+  hide(LYR.copyAll);
+  /* the scan that carries the copy across the edge */
+  LYR.scan = el('rect', { x: 6340, y: 5470, width: 60, height: 500, fill: 'url(#gScan)', opacity: 0 }, grp);
+  /* thread lanes, one on each side of the edge */
+  const ly = 6112;
+  LYR.mLab = ptxt(gMain, 6380, ly - 16, 'main thread', { size: 20, fill: C.mainP });
+  LYR.mSegs = [['paint', 6380, 140], ['commit', 6522, 120], ['JavaScript, next task', 6644, 520]].map(sg => {
+    const r = el('rect', { x: sg[1], y: ly, width: sg[2] - 2, height: 44, fill: 'url(#pHatchG)', stroke: C.mainP, 'stroke-width': 1.5 }, gMain);
+    const t = stext(gMain, sg[1] + 10, ly + 28, sg[0], { cls: 'mono', size: 16, fill: C.lead });
+    return [r, t];
+  });
+  LYR.mWait = mtxt(gMain, 6522 + 60, ly + 70, 'short wait', { size: 15, anchor: 'middle', fill: C.leadMid });
+  hide(LYR.mSegs.flat());
+  LYR.cLab = mono(grp, 7330, ly - 16, 'compositor thread', { size: 17, fill: C.comp });
+  LYR.cSegs = [['commit', 7330, 120], ['layers, tiles, frames', 7452, 348]].map(sg => {
+    const r = el('path', { d: rrPath(sg[1], ly, sg[2] - 2, 44, 6), fill: C.comp, 'fill-opacity': 0.14, stroke: C.comp, 'stroke-width': 1.5 }, grp);
+    const t = mono(grp, sg[1] + 10, ly + 28, sg[0], { size: 15, fill: C.ink });
+    return [r, t];
+  });
+  hide([LYR.cLab].concat(LYR.cSegs.flat()));
+  LYR.path19 = mono(grp, F.s19.cx + W / 2 - 64, F.s19.cy + H / 2 - 30, 'cc/trees/proxy_impl.h', { size: 16, anchor: 'end', fill: '#8a7a55' });
+  hide(LYR.path19);
+})();
+
+/* Scenes 20 and 21: the page splits into layers that explode into a stack.
+   Each layer is a group whose affine matrix is interpolated by a proxy. */
+(function buildLayers() {
+  const grp = g(gLight);
+  const s = 0.75, cx0 = 440, cy0 = 0;                /* layer space: CSS px from (440, 0) scaled by s */
+  const loc = (x, y) => [(x - cx0) * s, (y - cy0) * s];
+  const LW = 1040 * s, LH = 470 * s;
+  const flat = { x: 7880, y: 5570 };                 /* where the flat page sits */
+  LYR.defs = [
+    { key: 'root', label: 'root layer', why: ['everything else', 'shares this one'], rect: [0, 0, LW, LH] },
+    { key: 'img', label: 'img', why: ['will-change: transform', 'asked for its own layer'], rect: [...loc(PAGE.img.x, PAGE.img.y), PAGE.img.w * s, PAGE.img.h * s] },
+    { key: 'iframe', label: 'iframe', why: ['another site, drawn by', 'another renderer process'], rect: [...loc(PAGE.iframe.x, PAGE.iframe.y), PAGE.iframe.w * s, PAGE.iframe.h * s] },
+    { key: 'badge', label: 'badge', why: ['its opacity animation runs', 'on the compositor thread'], rect: [...loc(PAGE.badge.x, PAGE.badge.y), PAGE.badge.w * s, PAGE.badge.h * s] },
+    { key: 'header', label: 'fixed header', why: ['stays put while', 'the page scrolls'], rect: [0, 0, LW, 16] }
+  ];
+  LYR.layers = LYR.defs.map((d, i) => {
+    const lg = g(grp);
+    /* every layer is a full sheet; only its own content is drawn on it */
+    if (d.key !== 'root') el('rect', { x: 0, y: 0, width: LW, height: LH, fill: '#1a1406', 'fill-opacity': 0.08, stroke: C.comp, 'stroke-width': 1.2, 'stroke-opacity': 0.4 }, lg);
+    const inner = g(lg);
+    const [rx, ry, rw, rh] = d.rect;
+    if (d.key === 'root') {
+      el('rect', { x: 0, y: 0, width: LW, height: LH, fill: '#ffffff' }, inner);
+      const hp = loc(PAGE.h1.x, PAGE.h1.base);
+      stext(inner, hp[0], hp[1], PAGE.h1.text, { cls: 'page', size: PAGE.h1.size * s, weight: 700, fill: C.pink });
+      PAGE.p.lines.forEach((ln, k) => { const q = loc(PAGE.p.x, PAGE.p.y + 15 + k * 19); stext(inner, q[0], q[1], ln, { cls: 'page', size: 16 * s, fill: PAGE.text }); });
+    } else if (d.key === 'img') drawSunset(inner, { x: rx, y: ry }, rw, rh);
+    else if (d.key === 'iframe') drawMap(inner, { x: rx, y: ry }, rw, rh);
+    else if (d.key === 'badge') { const B = PAGE.badge; el('rect', { x: rx, y: ry, width: rw, height: rh, rx: B.r * s, fill: B.bg }, inner); stext(inner, rx + B.pad * s, ry + 17 * s, B.text, { cls: 'page', size: 16 * s, fill: B.fg }); }
+    else { el('rect', { x: 0, y: 0, width: LW, height: 16, fill: '#ffffff', 'fill-opacity': 0.96 }, inner); stext(inner, 6, 12, PAGE.header.text, { cls: 'page', size: 16 * s, fill: PAGE.text }); }
+    const edge = el('path', { d: rrPath(rx, ry, rw, rh, 0), fill: 'none', stroke: C.comp, 'stroke-width': 2, 'stroke-opacity': 0 }, lg);
+    return { g: lg, inner: inner, edge: edge, d: d };
+  });
+  /* exploded pose: an axonometric stack; flat pose: the page as drawn */
+  const ex = (i) => ({ a: 0.84, b: 0.2, c: -0.5, d: 0.5, e: 7930 + i * 30, f: 5860 - i * 92 });
+  const fl = () => ({ a: 1, b: 0, c: 0, d: 1, e: flat.x, f: flat.y });
+  LYR.pose = { u: 0 };
+  let last = -1;
+  addRenderer(() => {
+    const u = LYR.pose.u;
+    if (u === last) return;
+    last = u;
+    const k = u * u * (3 - 2 * u);
+    LYR.layers.forEach((ly, i) => {
+      const A = fl(), B = ex(i);
+      const m = ['a', 'b', 'c', 'd', 'e', 'f'].map(key => fmt(lerp(A[key], B[key], k), 4));
+      ly.g.setAttribute('transform', 'matrix(' + m.join(' ') + ')');
+    });
+  });
+  LYR.all = LYR.layers.map(l => l.g);
+  hide(LYR.all);
+  /* labels, placed at the right edge of each exploded layer */
+  LYR.labels = LYR.layers.map((ly, i) => {
+    const B = ex(i), [rx, ry, rw, rh] = ly.d.rect;
+    const px = B.a * (rx + rw) + B.c * (ry + rh / 2) + B.e, py = B.b * (rx + rw) + B.d * (ry + rh / 2) + B.f;
+    const lx = 8800, ty = [6030, 5910, 5790, 5670, 5550][i];
+    const line = el('path', { d: 'M' + fmt(px + 10, 1) + ' ' + fmt(py, 1) + 'L' + (lx - 14) + ' ' + (ty - 6), fill: 'none', stroke: C.comp, 'stroke-width': 1, 'stroke-opacity': 0.5 }, grp);
+    const name = mono(grp, lx, ty, ly.d.label, { size: 18, fill: C.comp, weight: 500 });
+    const why = ly.d.why.map((w, j) => mono(grp, lx, ty + 26 + j * 22, w, { size: 15, fill: '#c9d0dc' }));
+    hide([line, name].concat(why));
+    return { line: line, name: name, why: why };
+  });
+  LYR.cost = mono(grp, 8800, 6150, 'every layer costs GPU memory: use them deliberately', { size: 16, fill: C.dim });
+  hide(LYR.cost);
+  LYR.idle = mono(grp, 8800, 6180, 'main thread: idle while the badge animates', { size: 16, fill: C.main });
+  hide(LYR.idle);
+  LYR.path20 = mono(grp, F.s20.cx + W / 2 - 64, F.s20.cy + H / 2 - 30, 'platform/graphics/compositing/paint_artifact_compositor.h', { size: 16, anchor: 'end', fill: '#8a7a55' });
+  hide(LYR.path20);
+})();
+
+SC[19] = t => {
+  titleOut(17, t);
+  camTo(F.s19, t + 0.1, 1.4);
+  write(LYR.mLab, t + 0.9, 0.35);
+  fadeIn(LYR.mSegs[0], t + 0.95, 0.3);
+  fadeIn(LYR.mSegs[1], t + 1.25, 0.3);
+  write(LYR.mWait, t + 1.35, 0.3);
+  tl.to(LYR.scan, { opacity: 1, duration: 0.15 }, t + 1.2);
+  tl.to(LYR.scan, { attr: { x: 7800 }, duration: 1.1, ease: 'power1.inOut' }, t + 1.2);
+  tl.to(LYR.scan, { opacity: 0, duration: 0.2 }, t + 2.2);
+  draw(LYR.copyFrame.strokes, t + 1.75, 0.5);
+  fadeIn([LYR.copyFill, LYR.copyT], t + 1.8, 0.3);
+  fadeIn(LYR.copyRows, t + 1.85, 0.2, { stagger: 0.03 });
+  fadeIn([LYR.cLab].concat(LYR.cSegs[0]), t + 1.9, 0.3);
+  fadeIn(LYR.mSegs[2], t + 2.3, 0.35);
+  fadeIn(LYR.cSegs[1], t + 2.35, 0.35);
+  fadeIn(LYR.path19, t + 2.6, 0.4);
+  titleIn(18, t + 1.0);
+};
+SC[20] = t => {
+  titleOut(18, t);
+  grainTo(0, t + 0.1, 0.6);
+  hudOn(t + 0.6);
+  camTo(F.s20, t + 0.1, 1.4);
+  fadeOut(LYR.copyAll.concat(LYR.copyFrame.strokes, [LYR.cLab, LYR.path19], LYR.cSegs.flat()), t + 0.4, 0.4);
+  fadeIn(LYR.all, t + 0.8, 0.4, { stagger: 0.05 });
+  tl.to(LYR.layers.map(l => l.edge), { attr: { 'stroke-opacity': 0.95 }, duration: 0.4, stagger: 0.06 }, t + 1.1);
+  tl.to(LYR.pose, { u: 1, duration: 1.3, ease: E.io }, t + 1.3);
+  LYR.labels.forEach((lb, i) => { fadeIn([lb.line, lb.name], t + 2.3 + i * 0.1, 0.3); });
+  fadeIn(LYR.path20, t + 2.6, 0.4);
+  titleIn(19, t + 1.0);
+};
+SC[21] = t => {
+  titleOut(19, t);
+  camTo(F.s21, t + 0.1, 1.2);
+  LYR.labels.forEach((lb, i) => fadeIn(lb.why, t + 0.9 + i * 0.14, 0.35, { stagger: 0.06 }));
+  /* the badge pulses twice on its own layer while the main thread stays idle */
+  const badge = LYR.layers[3].inner;
+  [0, 1].forEach(k => {
+    tl.to(badge, { opacity: 0.3, duration: 0.25, ease: E.soft }, t + 1.6 + k * 0.55);
+    tl.to(badge, { opacity: 1, duration: 0.25, ease: E.soft }, t + 1.85 + k * 0.55);
+  });
+  fadeOut(LYR.path20, t + 0.2, 0.3);
+  fadeIn(LYR.idle, t + 1.6, 0.35);
+  fadeIn(LYR.cost, t + 2.3, 0.4);
+  titleIn(20, t + 0.9);
+};
+
+/* ---------- Dark side, band 2 (scenes 22 to 24): tiles, raster, activate ---------- */
+const TIL = {};
+const RY_2 = L.ds.ds2;
+F.s22 = cam(8420, RY_2);
+F.s23 = cam(8420, RY_2 + 20, 1540);
+F.s24 = cam(10460, RY_2);
+
+(function buildTiles() {
+  const grp = g(gLight);
+  const lx = 7720, ly = 4262, lw = 800, lh = 600, cols = 5, rows = 5, tw = lw / cols, th = lh / rows, k = lw / 1920;
+  TIL.geo = { lx: lx, ly: ly, tw: tw, th: th };
+  /* page content (a longer page than ours, so that it scrolls) */
+  const content = g(grp);
+  el('rect', { x: lx, y: ly, width: lw, height: lh, fill: '#ffffff' }, content);
+  stext(content, lx + 640 * k, ly + 109 * k, PAGE.h1.text, { cls: 'page', size: 64 * k, weight: 700, fill: C.pink });
+  [168, 187].forEach(y => el('rect', { x: lx + 640 * k, y: ly + y * k, width: 600 * k, height: 7 * k, fill: '#bfc3ca' }, content));
+  drawSunset(content, { x: lx + 640 * k, y: ly + 222 * k }, 240 * k, 160 * k);
+  drawMap(content, { x: lx + 884 * k, y: ly + 228 * k }, 300 * k, 154 * k);
+  for (let i = 0; i < 26; i++) el('rect', { x: lx + 640 * k, y: ly + (440 + i * 40) * k + (i % 5 === 4 ? 12 : 0), width: (i % 5 === 4 ? 300 : 620 - (i * 37 % 90)) * k, height: 8 * k, fill: '#cfd3d9' }, content);
+  TIL.content = content;
+  hide(content);
+  /* tiles: covers that hide unrastered content, tinted by priority */
+  const vpRows = 3;
+  TIL.tiles = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const bin = r < vpRows ? 0 : r === vpRows ? 1 : 2;
+    const x = lx + c * tw, y = ly + r * th;
+    const cover = el('rect', { x: x, y: y, width: tw, height: th, fill: '#0b0e14' }, grp);
+    const tint = el('rect', { x: x + 3, y: y + 3, width: tw - 6, height: th - 6, rx: 3, fill: C.comp, 'fill-opacity': [0.5, 0.22, 0.07][bin] }, grp);
+    TIL.tiles.push({ r: r, c: c, bin: bin, cover: cover, tint: tint });
+  }
+  hide(TIL.tiles.map(t => [t.cover, t.tint]).flat());
+  TIL.grid = g(grp, { stroke: C.comp, 'stroke-width': 1.3, 'stroke-opacity': 0.75 });
+  for (let c = 0; c <= cols; c++) el('line', { x1: lx + c * tw, y1: ly, x2: lx + c * tw, y2: ly + lh }, TIL.grid);
+  for (let r = 0; r <= rows; r++) el('line', { x1: lx, y1: ly + r * th, x2: lx + lw, y2: ly + r * th }, TIL.grid);
+  hide(TIL.grid);
+  TIL.vp = N.rect(grp, lx - 8, ly - 8, lw + 16, vpRows * th + 16, '#eef2f8', { r: 6, w: 2 });
+  TIL.vpT = mono(grp, lx - 8, ly - 22, 'the viewport', { size: 17, fill: C.ink });
+  TIL.scroll = N.line(grp, lx + lw + 40, ly + 60, lx + lw + 40, ly + lh - 40, C.dim, { w: 1.4 });
+  TIL.scrollT = mono(grp, lx + lw + 56, ly + lh - 40, 'scroll', { size: 15, fill: C.dim });
+  hide([TIL.vpT, TIL.scrollT]);
+  /* legend: the real priority bins */
+  const gx = 8700, gy = 4300;
+  TIL.legend = [['NOW', 'in the viewport'], ['SOON', 'about to scroll in'], ['EVENTUALLY', 'everything else']].map((b, i) => {
+    const y = gy + i * 86;
+    const sw = el('rect', { x: gx, y: y - 22, width: 34, height: 30, rx: 3, fill: C.comp, 'fill-opacity': [0.5, 0.22, 0.07][i], stroke: C.comp, 'stroke-opacity': 0.75 }, grp);
+    const n = mono(grp, gx + 50, y, b[0], { size: 19, fill: C.comp, weight: 600 });
+    const d = mono(grp, gx + 50, y + 26, b[1], { size: 16, fill: '#c9d0dc' });
+    return [sw, n, d];
+  }).flat();
+  TIL.note = [mono(grp, gx, gy + 280, 'a longer page than ours,', { size: 15, fill: C.dim }), mono(grp, gx, gy + 302, 'so that it can scroll', { size: 15, fill: C.dim })];
+  hide(TIL.legend.concat(TIL.note));
+  TIL.path22 = mono(grp, F.s22.cx + W / 2 - 64, F.s22.cy + H / 2 - 30, 'cc/tiles/tile_priority.h', { size: 16, anchor: 'end', fill: '#8a7a55' });
+  hide(TIL.path22);
+  /* raster: Skia on the GPU, in the Viz process */
+  const vx = 8690, vy = 4300;
+  TIL.gpuFill = el('path', { d: rrPath(vx, vy, 420, 300, 14), fill: '#140b06', 'fill-opacity': 0.9 }, grp);
+  TIL.gpu = N.rect(grp, vx, vy, 420, 300, C.viz, { r: 14, w: 1.6 });
+  TIL.gpuT = [mono(grp, vx + 24, vy + 40, 'Viz process, GPU', { size: 19, fill: C.viz, weight: 600 }), mono(grp, vx + 24, vy + 68, 'Skia draws each tile', { size: 16, fill: '#e2d2c4' })];
+  /* the image decodes from blocks to a bitmap */
+  const dx = vx + 24, dy = vy + 96, dw = 180, dh = 120;
+  TIL.dec = g(grp);
+  drawSunset(TIL.dec, { x: dx, y: dy }, dw, dh);
+  TIL.blocks = [];
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) TIL.blocks.push(el('rect', { x: dx + c * dw / 4, y: dy + r * dh / 3, width: dw / 4 + 0.5, height: dh / 3 + 0.5, fill: ['#1c1a24', '#26222e', '#201c28'][(r + c) % 3] }, TIL.dec));
+  TIL.decT = [mono(grp, dx + dw + 20, dy + 40, 'sunset.jpg', { size: 16, fill: C.ink }), mono(grp, dx + dw + 20, dy + 64, 'decoded', { size: 15, fill: '#e2d2c4' }), mono(grp, dx + dw + 20, dy + 86, 'on the way', { size: 15, fill: '#e2d2c4' })];
+  hide([TIL.gpuFill, TIL.dec].concat(TIL.gpuT, TIL.decT));
+  TIL.tasks = N.path(grp, 'M' + (lx + lw + 70) + ' ' + (ly + 150) + 'C' + (lx + lw + 170) + ' ' + (ly + 150) + ' ' + (vx - 110) + ' ' + (vy + 150) + ' ' + (vx - 6) + ' ' + (vy + 150), C.comp, { w: 1.6 });
+  TIL.tasksT = mono(grp, lx + lw + 90, ly + 130, 'raster tasks', { size: 15, fill: C.comp });
+  hide(TIL.tasksT);
+  /* the tile that holds our pixel */
+  const ox = lx + tw, oy = ly;
+  TIL.ours = N.rect(grp, ox + 2, oy + 2, tw - 4, th - 4, C.pink, { w: 2.2 });
+  TIL.oursT = mono(grp, ox + 4, oy - 22, "our pixel's tile", { size: 16, fill: C.pink, weight: 500 });
+  hide(TIL.oursT);
+  TIL.path23 = mono(grp, F.s23.cx + W / 2 - 64, F.s23.cy + H / 2 - 30, 'cc/raster/gpu_raster_buffer_provider.h', { size: 16, anchor: 'end', fill: '#8a7a55' });
+  hide(TIL.path23);
+})();
+
+(function buildActivate() {
+  const grp = g(gLight);
+  const y = 4250, pw = 560, ph = 470, px = 9760, ax = 10560;
+  const thumb = (x, yy, old) => {
+    const tg = g(grp);
+    el('rect', { x: x, y: yy, width: 400, height: 250, fill: old ? '#d9dce2' : '#ffffff' }, tg);
+    stext(tg, x + 130, yy + 60, PAGE.h1.text, { cls: 'page', size: 30, weight: 700, fill: old ? '#9aa0aa' : C.pink });
+    [80, 92].forEach(v => el('rect', { x: x + 130, y: yy + v, width: 200, height: 5, fill: '#b8bcc4' }, tg));
+    el('rect', { x: x + 130, y: yy + 108, width: 80, height: 54, fill: old ? '#b4a9ac' : '#ff8a5c' }, tg);
+    el('rect', { x: x + 214, y: yy + 110, width: 100, height: 52, fill: old ? '#c3cac2' : '#e8efe6' }, tg);
+    if (!old) { el('rect', { x: x + 298, y: yy + 168, width: 32, height: 14, rx: 7, fill: PAGE.badge.bg }, tg); stext(tg, x + 304, yy + 179, 'new', { cls: 'page', size: 10, fill: PAGE.badge.fg }); }
+    return tg;
+  };
+  TIL.pFrame = N.rect(grp, px, y, pw, ph, C.comp, { r: 14, w: 1.5, dash: '10 8', drawn: true });
+  TIL.aFrame = N.rect(grp, ax, y, pw, ph, C.comp, { r: 14, w: 1.8 });
+  TIL.pT = [mono(grp, px + 24, y + 40, 'pending tree', { size: 20, fill: C.comp, weight: 600 }), mono(grp, px + 24, y + 66, 'the new commit, being rastered', { size: 15, fill: '#c9d0dc' })];
+  TIL.aT = [mono(grp, ax + 24, y + 40, 'active tree', { size: 20, fill: C.comp, weight: 600 }), mono(grp, ax + 24, y + 66, 'what is on screen now', { size: 15, fill: '#c9d0dc' })];
+  TIL.oldThumb = thumb(ax + 80, y + 110, true);
+  TIL.newThumb = thumb(px + 80, y + 110, false);
+  TIL.newCovers = [];
+  for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) TIL.newCovers.push(el('rect', { x: px + 80 + c * 100, y: y + 110 + r * 125, width: 100, height: 125, fill: '#0b0e14', stroke: C.comp, 'stroke-opacity': 0.6 }, grp));
+  TIL.ready = mono(grp, px + 24, y + ph - 30, '', { size: 16, fill: C.ink });
+  TIL.readyProx = counter(TIL.ready, 0, 8, v => 'visible tiles ready: ' + Math.round(v) + ' of 8');
+  TIL.arrow = N.path(grp, 'M' + (px + pw + 10) + ' ' + (y + 235) + 'H' + (ax - 12) + 'M' + (ax - 26) + ' ' + (y + 223) + 'L' + (ax - 12) + ' ' + (y + 235) + 'L' + (ax - 26) + ' ' + (y + 247), C.comp, { w: 1.8 });
+  TIL.arrowT = mono(grp, (px + pw + ax) / 2, y + 214, 'activate', { size: 16, anchor: 'middle', fill: C.comp });
+  TIL.never = mono(grp, px, y + ph + 50, 'Only complete trees go live, so you never see half a frame.', { size: 17, fill: C.ink });
+  TIL.pAll = [TIL.pFrame.g || TIL.pFrame].concat(TIL.pT, [TIL.newThumb], TIL.newCovers, [TIL.ready]);
+  hide(TIL.pAll.concat(TIL.aT, [TIL.oldThumb, TIL.arrowT, TIL.never]));
+  TIL.path24 = mono(grp, F.s24.cx + W / 2 - 64, F.s24.cy + H / 2 - 30, 'cc/trees/layer_tree_host_impl.h', { size: 16, anchor: 'end', fill: '#8a7a55' });
+  hide(TIL.path24);
+})();
+
+SC[22] = t => {
+  titleOut(20, t);
+  camTo(F.s22, t + 0.1, 2.0);
+  fadeOut(LYR.labels.map(l => [l.line, l.name].concat(l.why)).flat().concat([LYR.cost, LYR.idle]), t + 0.1, 0.4);
+  fadeIn(TIL.tiles.map(x => x.cover), t + 1.2, 0.3);
+  tl.set(TIL.content, { autoAlpha: 1 }, t + 1.55);   /* only under opaque covers */
+  fadeIn(TIL.grid, t + 1.4, 0.4);
+  draw(TIL.vp.strokes, t + 1.6, 0.5); fadeIn(TIL.vpT, t + 1.7, 0.3);
+  [0, 1, 2].forEach(b => fadeIn(TIL.tiles.filter(x => x.bin === b).map(x => x.tint), t + 2.0 + b * 0.35, 0.3, { stagger: 0.03 }));
+  draw(TIL.scroll.strokes, t + 2.1, 0.5); fadeIn(TIL.scrollT, t + 2.3, 0.3);
+  fadeIn(TIL.legend, t + 2.2, 0.3, { stagger: 0.05 });
+  fadeIn(TIL.note, t + 2.9, 0.3);
+  fadeIn(TIL.path22, t + 2.9, 0.3);
+  titleIn(21, t + 1.8);
+};
+SC[23] = t => {
+  titleOut(21, t);
+  fadeOut([TIL.path22].concat(TIL.note, TIL.legend), t, 0.3);
+  camTo(F.s23, t + 0.1, 1.2);
+  draw(TIL.gpu.strokes, t + 0.7, 0.5);
+  fadeIn([TIL.gpuFill].concat(TIL.gpuT), t + 0.8, 0.3);
+  draw(TIL.tasks.strokes, t + 1.0, 0.5); fadeIn(TIL.tasksT, t + 1.1, 0.3);
+  /* tiles raster in priority order: the covers fade away */
+  const order = TIL.tiles.slice().sort((a, b) => a.bin - b.bin || a.r - b.r || a.c - b.c);
+  order.forEach((x, i) => tl.to([x.cover, x.tint], { autoAlpha: 0, duration: 0.18, ease: E.soft }, t + 1.3 + i * 0.055));
+  fadeIn([TIL.dec].concat(TIL.decT), t + 1.3, 0.3);
+  tl.to(TIL.blocks, { autoAlpha: 0, duration: 0.2, stagger: 0.06 }, t + 1.6);
+  draw(TIL.ours.strokes, t + 1.45, 0.35); fadeIn(TIL.oursT, t + 1.6, 0.3);
+  fadeIn(TIL.path23, t + 2.6, 0.3);
+  titleIn(22, t + 1.0);
+};
+SC[24] = t => {
+  titleOut(22, t);
+  camTo(F.s24, t + 0.1, 1.4);
+  fadeIn(TIL.pAll, t + 0.8, 0.3);
+  draw(TIL.aFrame.strokes, t + 0.8, 0.4); fadeIn(TIL.aT.concat(TIL.oldThumb), t + 0.9, 0.3);
+  tl.to(TIL.readyProx, { v: 8, duration: 0.8, ease: E.lin }, t + 1.2);
+  tl.to(TIL.newCovers, { autoAlpha: 0, duration: 0.12, stagger: 0.1 }, t + 1.2);
+  draw(TIL.arrow.strokes, t + 2.0, 0.3); fadeIn(TIL.arrowT, t + 2.05, 0.2);
+  tl.to(TIL.newThumb, { x: 800, duration: 0.55, ease: E.io }, t + 2.2);
+  fadeOut(TIL.oldThumb, t + 2.3, 0.3);
+  tl.to(TIL.ready, { autoAlpha: 0, duration: 0.2 }, t + 2.2);
+  fadeIn(TIL.never, t + 2.6, 0.35);
+  fadeIn(TIL.path24, t + 2.7, 0.25);
+  titleIn(23, t + 1.0);
+};
+
+/* ---------- Dark side, band 3 (scenes 25 and 26): frames and aggregation ---------- */
+const FRM = {};
+const RY_3 = L.ds.ds3;
+F.s25 = cam(8640, RY_3);
+F.s26 = cam(10480, RY_3);
+
+(function buildFrame() {
+  const grp = g(gLight);
+  /* where the quads land on screen */
+  const mx = 7880, my = 2980, mw = 600, mh = 312;
+  FRM.map = N.rect(grp, mx, my, mw, mh, '#eef2f8', { r: 4, w: 1.4 });
+  FRM.mapT = mono(grp, mx, my - 16, 'quads, where they go on screen', { size: 16, fill: C.dim });
+  const q = (x, y, w, h, col, dash) => el('path', { d: rrPath(mx + x, my + y, w, h, 2), fill: col, 'fill-opacity': 0.16, stroke: col, 'stroke-width': 1.5, 'stroke-dasharray': dash }, grp);
+  FRM.quads = [
+    q(0, 0, mw, mh, '#8c96aa'),
+    q(0, 0, 150, 156, C.comp), q(150, 0, 150, 156, C.pink), q(300, 0, 150, 156, C.comp), q(450, 0, 150, 156, C.comp),
+    q(200, 118, 76, 52, C.comp), q(282, 120, 94, 50, C.viz, '6 5')
+  ];
+  hide(FRM.quads.concat(FRM.mapT));
+  /* the frame itself: render passes holding quads */
+  const fx = 8560, fy = 2960, fw = 690;
+  FRM.fill = el('path', { d: rrPath(fx, fy, fw, 520, 14), fill: '#0d0b05', 'fill-opacity': 0.92 }, grp);
+  FRM.frame = N.rect(grp, fx, fy, fw, 520, C.comp, { r: 14, w: 1.6 });
+  FRM.title = mono(grp, fx + 24, fy + 40, 'CompositorFrame', { size: 21, fill: C.comp, weight: 600 });
+  FRM.pass = N.rect(grp, fx + 20, fy + 64, fw - 40, 300, C.comp, { r: 8, w: 1.1, op: 0.8 });
+  FRM.passT = mono(grp, fx + 40, fy + 96, 'render pass: root', { size: 17, fill: C.ink, weight: 500 });
+  const rows = [['TileDrawQuad', 'tiles of the root layer', C.comp], ['TileDrawQuad', "our pixel's tile", C.pink], ['TileDrawQuad', 'the img layer', C.comp], ['SurfaceDrawQuad', 'the iframe goes here', C.viz], ['SolidColorDrawQuad', 'background', '#aeb6c4']];
+  FRM.rows = rows.map((r, i) => {
+    const y = fy + 140 + i * 42;
+    const sw = el('rect', { x: fx + 40, y: y - 16, width: 18, height: 18, rx: 3, fill: r[2], 'fill-opacity': 0.6 }, grp);
+    const a = mono(grp, fx + 72, y, r[0], { size: 16, fill: C.ink, weight: 500 });
+    const b = mono(grp, fx + 72 + (r[0].length + 1) * 16 * MONO_ADV, y, r[1], { size: 16, fill: r[2] === C.pink ? C.pink : '#c9d0dc' });
+    return [sw, a, b];
+  }).flat();
+  FRM.pass2 = N.rect(grp, fx + 20, fy + 384, fw - 40, 110, C.comp, { r: 8, w: 1.1, op: 0.6, dash: '8 6', drawn: true });
+  FRM.pass2T = [mono(grp, fx + 40, fy + 420, 'render pass: an effect, like a blur', { size: 16, fill: C.ink }), mono(grp, fx + 40, fy + 448, 'drawn separately, then used as a texture', { size: 15, fill: C.dim })];
+  FRM.hidden = [FRM.fill, FRM.title, FRM.passT, FRM.pass2.g || FRM.pass2].concat(FRM.rows, FRM.pass2T);
+  hide(FRM.hidden);
+  FRM.toViz = N.path(grp, 'M' + (fx + fw + 12) + ' ' + (fy + 260) + 'H' + (fx + fw + 180) + 'm-14 -12l14 12l-14 12', C.viz, { w: 2 });
+  FRM.toVizT = mono(grp, fx + fw + 24, fy + 240, 'to Viz', { size: 16, fill: C.viz });
+  hide(FRM.toVizT);
+  FRM.path25 = mono(grp, F.s25.cx + W / 2 - 64, F.s25.cy + H / 2 - 30, 'components/viz/common/quads/compositor_frame.h', { size: 16, anchor: 'end', fill: '#8a7a55' });
+  hide(FRM.path25);
+})();
+
+(function buildAggregate() {
+  const grp = g(gLight);
+  const x0 = 9740, y0 = 2940;
+  /* three producers, three frames */
+  const card = (x, y, label, sub, col) => {
+    const cg = g(grp);
+    N.rect(cg, x, y, 390, 40, col, { r: 8, w: 1.3, drawn: true });
+    mono(cg, x + 14, y + 26, label, { size: 16, fill: col, weight: 600 });
+    mono(cg, x + 14 + (label.length + 1) * 16 * MONO_ADV, y + 26, sub, { size: 16, fill: C.dim });
+    return cg;
+  };
+  FRM.srcs = [card(x0, y0, 'browser', 'its interface', '#aeb6c4'), card(x0, y0 + 56, 'renderer', 'our page', C.comp), card(x0, y0 + 112, 'renderer', 'the iframe (another site)', C.comp)];
+  /* the aggregator, fed by all three */
+  const ax = 10390, ay = 2940;
+  FRM.aggBox = N.rect(grp, ax, ay, 520, 150, C.viz, { r: 12, w: 1.5 });
+  FRM.aggBoxT = [mono(grp, ax + 24, ay + 40, 'Viz: the surface aggregator', { size: 18, fill: C.viz, weight: 600 }), mono(grp, ax + 24, ay + 70, 'fills each slot with the frame', { size: 15, fill: C.ink }), mono(grp, ax + 24, ay + 94, 'that belongs there', { size: 15, fill: C.ink })];
+  FRM.feeds = [0, 1, 2].map(i => {
+    const sy = y0 + 20 + i * 56, ey = ay + 50 + i * 25;
+    return N.path(grp, 'M' + (x0 + 398) + ' ' + sy + 'C' + (x0 + 470) + ' ' + sy + ' ' + (ax - 90) + ' ' + ey + ' ' + (ax - 8) + ' ' + ey + 'M' + (ax - 20) + ' ' + (ey - 8) + 'L' + (ax - 8) + ' ' + ey + 'L' + (ax - 20) + ' ' + (ey + 8), i === 0 ? '#aeb6c4' : C.comp, { w: 1.4 });
+  });
+  /* the pieces, spread out on the left */
+  const pw = 400, ph = 250;
+  FRM.pUI = g(grp);
+  el('rect', { x: 0, y: 0, width: pw, height: 26, fill: '#2b3240' }, FRM.pUI);
+  el('rect', { x: 10, y: 6, width: 120, height: 14, rx: 4, fill: '#3a4252' }, FRM.pUI);
+  FRM.pPage = g(grp);
+  el('rect', { x: 0, y: 0, width: pw, height: ph - 26, fill: '#ffffff' }, FRM.pPage);
+  stext(FRM.pPage, 130, 50, PAGE.h1.text, { cls: 'page', size: 28, weight: 700, fill: C.pink });
+  [66, 78].forEach(v => el('rect', { x: 130, y: v, width: 210, height: 5, fill: '#b8bcc4' }, FRM.pPage));
+  el('rect', { x: 130, y: 94, width: 78, height: 52, fill: '#ff8a5c' }, FRM.pPage);
+  FRM.slot = el('rect', { x: 214, y: 96, width: 98, height: 50, fill: 'none', stroke: C.viz, 'stroke-width': 1.6, 'stroke-dasharray': '5 4' }, FRM.pPage);
+  FRM.slotT = mono(grp, 0, 0, 'slot: SurfaceDrawQuad', { size: 16, fill: C.viz });
+  FRM.pIfr = g(grp);
+  drawMap(FRM.pIfr, { x: 0, y: 0 }, 98, 50);
+  const P0 = { ui: [9760, 3160], page: [9760, 3214], ifr: [10196, 3330] };
+  gsap.set(FRM.pUI, { x: P0.ui[0], y: P0.ui[1] });
+  gsap.set(FRM.pPage, { x: P0.page[0], y: P0.page[1] });
+  gsap.set(FRM.pIfr, { x: P0.ifr[0], y: P0.ifr[1] });
+  gsap.set(FRM.slotT, { x: P0.page[0] + 214, y: P0.page[1] + 170 });
+  /* ...and their places in the one aggregated frame, under the aggregator */
+  const fx = 10430, fy = 3196;
+  FRM.fin = { ui: [fx, fy], page: [fx, fy + 26], ifr: [fx + 214, fy + 26 + 96] };
+  FRM.agg = N.rect(grp, fx - 10, fy - 10, pw + 20, ph + 20, C.viz, { r: 8, w: 2 });
+  FRM.aggT = mono(grp, fx - 10, fy + ph + 40, 'one aggregated frame, ready to draw', { size: 17, fill: C.viz, weight: 500 });
+  FRM.aggHidden = FRM.srcs.concat([FRM.pUI, FRM.pPage, FRM.pIfr, FRM.slotT, FRM.aggT], FRM.aggBoxT);
+  hide(FRM.aggHidden);
+  FRM.path26 = mono(grp, F.s26.cx + W / 2 - 64, F.s26.cy + H / 2 - 30, 'components/viz/service/display/surface_aggregator.h', { size: 16, anchor: 'end', fill: '#8a6a55' });
+  hide(FRM.path26);
+})();
+
+SC[25] = t => {
+  titleOut(23, t);
+  camTo(F.s25, t + 0.1, 2.0);
+  draw(FRM.map.strokes, t + 1.3, 0.4); fadeIn(FRM.mapT, t + 1.35, 0.3);
+  fadeIn(FRM.quads, t + 1.5, 0.25, { stagger: 0.08 });
+  draw(FRM.frame.strokes, t + 1.4, 0.5);
+  fadeIn([FRM.fill, FRM.title], t + 1.5, 0.3);
+  draw(FRM.pass.strokes, t + 1.7, 0.4); fadeIn(FRM.passT, t + 1.75, 0.3);
+  fadeIn(FRM.rows, t + 1.9, 0.2, { stagger: 0.04 });
+  fadeIn([FRM.pass2.g || FRM.pass2].concat(FRM.pass2T), t + 2.6, 0.35);
+  draw(FRM.toViz.strokes, t + 2.9, 0.35); fadeIn(FRM.toVizT, t + 3.0, 0.25);
+  fadeIn(FRM.path25, t + 3.0, 0.3);
+  titleIn(24, t + 1.7);
+};
+SC[26] = t => {
+  titleOut(24, t);
+  camTo(F.s26, t + 0.1, 1.5);
+  fadeIn(FRM.srcs, t + 0.8, 0.3, { stagger: 0.12 });
+  draw(FRM.aggBox.strokes, t + 0.9, 0.45); fadeIn(FRM.aggBoxT, t + 1.0, 0.3, { stagger: 0.08 });
+  drawEach(FRM.feeds, t + 1.05, 0.35, 0.1);
+  fadeIn([FRM.pPage, FRM.slotT], t + 1.1, 0.3);
+  fadeIn([FRM.pUI, FRM.pIfr], t + 1.2, 0.3);
+  fadeOut(FRM.slotT, t + 1.6, 0.2);
+  tl.to(FRM.pPage, { x: FRM.fin.page[0], y: FRM.fin.page[1], duration: 0.7, ease: E.io }, t + 1.65);
+  tl.to(FRM.pIfr, { x: FRM.fin.ifr[0], y: FRM.fin.ifr[1], duration: 0.75, ease: E.io }, t + 1.75);
+  tl.to(FRM.pUI, { x: FRM.fin.ui[0], y: FRM.fin.ui[1], duration: 0.7, ease: E.io }, t + 1.85);
+  draw(FRM.agg.strokes, t + 2.55, 0.4);
+  fadeIn(FRM.aggT, t + 2.65, 0.3);
+  fadeIn(FRM.path26, t + 2.7, 0.3);
+  titleIn(25, t + 1.0);
+};
+
+/* ---------- The ending (scenes 27 to 30) ---------- */
+const END = {};
+(function buildEnd() {
+  /* Draw: the screen relights behind a scan line, top to bottom. */
+  const cp = el('clipPath', { id: 'cpLit' }, DEFS);
+  END.clipR = el('rect', { x: SCR.x - 10, y: SCR.y - 10, width: SCR.w + 20, height: SCR.h + 20 }, cp);
+  MON.lit.setAttribute('clip-path', 'url(#cpLit)');
+  END.scan = g(MON.g, { opacity: 0 });
+  el('rect', { x: SCR.x, y: -30, width: SCR.w, height: 30, fill: C.viz, 'fill-opacity': 0.16 }, END.scan);
+  el('rect', { x: SCR.x, y: -3, width: SCR.w, height: 3, fill: '#ffd3b8' }, END.scan);
+  gsap.set(END.scan, { y: SCR.y });
+  END.tagDraw = hudTag('Viz draws the aggregated frame into a buffer', 0, 0, '', 'left:auto; right:64px; top:auto; bottom:26px; color:' + C.viz + '; font-size:18px;');
+  END.tagVsync = hudTag('at the next refresh, the buffer is shown', 0, 0, '', 'left:auto; right:64px; top:auto; bottom:26px; color:' + C.ink + '; font-size:18px;');
+  hide([END.tagDraw, END.tagVsync]);
+  /* Back to our pixel: why it is pink, around it. */
+  const dot = c => '<i style="display:inline-block; width:10px; height:10px; border-radius:50%; background:' + c + '; box-shadow:0 0 8px ' + c + '; margin:0 10px 1px 0"></i>';
+  const tag = (html, x, y, right) => hdiv(hudEl, 'hud-tag', 'left:' + x + 'px; top:' + y + 'px; font-size:19px;' + (right ? ' transform:translateX(-100%); text-align:right;' : ''), html);
+  END.why = [
+    tag(dot(C.main) + '<b style="color:' + C.pink + '; font-weight:500">.hero</b> won the cascade', 612, 262, true),
+    tag(dot(C.main) + 'the H glyph covers it', 612, 322, true),
+    tag(dot(C.viz) + 'Skia rastered its tile', 988, 262),
+    tag(dot(C.viz) + 'Viz drew that tile', 988, 322)
+  ];
+  hide(END.why);
+  /* Thank you: dim the world behind the end card. */
+  END.dim = hdiv(hudEl, '', 'position:absolute; inset:0; background:rgba(4,6,10,0.9);');
+  hide(END.dim);
+})();
+
+SC[27] = t => {
+  titleOut(25, t);
+  camTo(F.mon, t + 0.1, 2.3);
+  tl.set(END.clipR, { attr: { height: 0 } }, t + 1.9);
+  tl.set(MON.lit, { autoAlpha: 1 }, t + 1.9);
+  tl.to(END.scan, { opacity: 1, duration: 0.15 }, t + 2.0);
+  tl.to(END.scan, { y: SCR.y + SCR.h, duration: 1.0, ease: 'power1.inOut' }, t + 2.0);
+  tl.to(END.clipR, { attr: { height: SCR.h + 20 }, duration: 1.0, ease: 'power1.inOut' }, t + 2.0);
+  tl.to(END.scan, { opacity: 0, duration: 0.2 }, t + 2.95);
+  fadeIn(END.tagDraw, t + 1.9, 0.3);
+  fadeOut(END.tagDraw, t + 3.0, 0.2);
+  fadeIn(END.tagVsync, t + 3.15, 0.3);
+  titleIn(26, t + 1.6);
+};
+SC[28] = t => {
+  titleOut(26, t);
+  fadeOut(END.tagVsync, t, 0.3);
+  camTo(PIXHUD.cam0, t + 0.2, 3.2, { anchor: PIX, ease: E.zoom, glide: u => smooth(0, 0.7, u) });
+  fadeIn(PIXHUD.ret, t + 0.3, 0.3);
+  fadeOut(PIXHUD.ret, t + 1.9, 0.3);
+  fadeIn(PIXHUD.rgb, t + 3.1, 0.3);
+  END.why.forEach((w, i) => fadeIn(w, t + 3.15 + i * 0.1, 0.3));
+  titleIn(27, t + 3.0);
+};
+SC[29] = t => {
+  titleOut(27, t);
+  hudOff(t);
+  fadeOut(END.why.concat([PIXHUD.rgb]), t, 0.3);
+  camTo(OVERVIEW, t + 0.15, 3.3, { anchor: PIX, ease: E.zoom, glide: u => smooth(0.1, 1, u) });
+  tl.set(RT.legend, { autoAlpha: 0 }, t);           /* the legend returns last, as the overview settles */
+  fadeIn(gRoute, t + 1.6, 0.7);
+  fadeIn(RT.legend, t + 2.6, 0.5);
+  fadeIn(PIXHUD.ret, t + 1.6, 0.4);
+  RT.stations.forEach((s, i) => { if (s.prod) fadeIn(s.prod, t + 2.2 + i * 0.07, 0.35); });
+  tl.to(RT.dot, { opacity: 1, duration: 0.2 }, t + 2.0);
+  tl.to(RT.prox, { u: 1, duration: 1.7, ease: 'power1.inOut' }, t + 2.0);
+  titleIn(28, t + 2.4);
+};
+SC[30] = t => {
+  titleOut(28, t);
+  fadeOut(PIXHUD.ret, t, 0.3);
+  fadeIn(END.dim, t + 0.2, 0.8);
+  titleIn(29, t + 0.7, { dur: 0.8, stagger: 0.03, restAt: 0.5 });
+  fadeIn(creditEl, t + 1.5, 0.6);
+};
+
+/* =====================================================================
+   6. TIMELINE ASSEMBLY, in scene order. Labels s0..s29 are the resting
+   states of scenes 1..30. Each block below is the transition INTO that
+   scene: it starts at the previous label and ends at its own label.
+   ===================================================================== */
+measureWritables();
+const LABELS = [];
+let T = 0;
+function scene(n, dur, build) {
+  const t0 = T;
+  build(t0);
+  T = t0 + dur;
+  if (tl.duration() > T + 1e-3) console.warn('scene ' + n + ' overruns its label by ' + (tl.duration() - T).toFixed(3) + 's');
+  tl.set({}, {}, T);                 /* labels do not extend a timeline; this does */
+  tl.addLabel('s' + (n - 1), T);
+  LABELS[n - 1] = T;
+}
+/* Mode helper: the dark-mode HUD readout is only for light scenes. */
+function hudOn(at) { tl.to(hudRead.node, { autoAlpha: 1, duration: 0.5, ease: E.out }, at); }
+function hudOff(at) { tl.to(hudRead.node, { autoAlpha: 0, duration: 0.35, ease: E.in }, at); }
+
+
+/* ---- Intro and scene 1: the pixel ---- */
+camStart(PIXHUD.cam0);
+const bloom = g(MON.g);
+const bloomHalo = el('rect', { x: PIX.x - PX_UNIT, y: PIX.y - PX_UNIT, width: 2 * PX_UNIT, height: 2 * PX_UNIT, rx: PX_UNIT, fill: C.pink, opacity: 0.25 }, bloom);
+const bloomSq = el('rect', { x: PIX.x - PX_UNIT / 2, y: PIX.y - PX_UNIT / 2, width: PX_UNIT, height: PX_UNIT, fill: C.pink }, bloom);
+gsap.set([bloomHalo, bloomSq], { scale: 0.02, transformOrigin: '50% 50%' });
+gsap.set(MON.lit, { autoAlpha: 0 });
+scene(1, 3.6, t => {
+  tl.to(bloomSq, { scale: 1, duration: 1.0, ease: 'expo.out' }, t + 0.25);
+  tl.to(bloomHalo, { scale: 1.6, opacity: 0.12, duration: 1.3, ease: 'expo.out' }, t + 0.25);
+  tl.to(MON.lit, { autoAlpha: 1, duration: 0.7, ease: E.soft }, t + 1.15);
+  tl.to([bloomSq, bloomHalo], { opacity: 0, duration: 0.6, ease: E.soft }, t + 1.25);
+  fadeIn(PIXHUD.rgb, t + 1.3, 0.3);
+  tl.to(PIXHUD.rgbProx, { p: 1, duration: 0.7, ease: E.lin }, t + 1.3);
+  PIXHUD.ch.forEach((c, k) => {
+    fadeIn([c.t, c.bar], t + 1.55 + k * 0.12, 0.35);
+    tl.to(c.fill, { scaleX: 1, duration: 0.6, ease: E.out }, t + 1.7 + k * 0.12);
+  });
+  titleIn(0, t + 1.8, { dur: 0.9, stagger: 0.026, restAt: 0.7 });
+  fadeIn(PIXHUD.note, t + 2.9, 0.5);
+});
+
+/* ---- Scene 2: one of millions (anchored zoom out to the monitor) ---- */
+scene(2, 3.8, t => {
+  titleOut(0, t);
+  fadeOut([PIXHUD.rgb, PIXHUD.note].concat(PIXHUD.ch.map(c => c.t), PIXHUD.ch.map(c => c.bar)), t, 0.35);
+  camTo(F.mon, t + 0.15, 3.3, { anchor: PIX, ease: E.zoom, glide: u => smooth(0.25, 1, u) });
+  hudOn(t + 0.4);
+  fadeIn(PIXHUD.count, t + 0.5, 0.4);
+  fadeIn(PIXHUD.ret, t + 1.35, 0.4);
+  titleIn(1, t + 2.9);
+});
+
+/* ---- Scene 3: it starts as text (the long rewind to the source) ---- */
+scene(3, 3.6, t => {
+  titleOut(1, t);
+  fadeOut([PIXHUD.count, PIXHUD.ret], t, 0.3);
+  camTo(F.T, t + 0.1, 2.7, { rho: 1.35 });
+  tl.to(MON.lit, { autoAlpha: 0, duration: 0.5, ease: E.soft }, t + 0.7);
+  [SRC.html, SRC.css, SRC.js].forEach((p, i) => {
+    const a = t + 1.7 + i * 0.16;
+    draw(p.frame.strokes, a, 0.7);
+    fadeIn([p.fill, p.bar, p.bytes], a + 0.2, 0.5);
+    tl.to(p.tprox, { p: 1, duration: 0.55, ease: E.lin }, a + 0.1);
+  });
+  const rows = SRC.html.code.rows.concat(SRC.css.code.rows, SRC.js.code.rows);
+  write(rows, t + 2.05, 0.32, 0.03);
+  write(SRC.hex, t + 2.6, 0.6);
+  draw(SRC.u1.strokes.concat(SRC.u2.strokes), t + 3.05, 0.45);
+  titleIn(2, t + 2.5);
+});
+
+/* ---- Scene 4: processes and threads ---- */
+scene(4, 3.2, t => {
+  titleOut(2, t);
+  camTo(F.P, t + 0.1, 1.7);
+  [PROC.browser, PROC.renderer, PROC.viz].forEach((b, i) => {
+    const a = t + 0.75 + i * 0.18;
+    draw(b.fr.strokes, a, 0.7);
+    fadeIn([b.fill, b.note], a + 0.25, 0.5);
+    tl.to(b.tp, { p: 1, duration: 0.5, ease: E.lin }, a + 0.1);
+  });
+  drawEach(PROC.ghosts, t + 1.1, 0.6, 0.1);
+  PROC.lanes.concat([PROC.io]).forEach((ln, i) => {
+    const a = t + 1.45 + i * 0.1;
+    draw(ln.edge.strokes, a, 0.5);
+    fadeIn([ln.bar, ln.nm, ln.tk], a + 0.15, 0.45);
+  });
+  draw(PROC.wire.strokes, t + 2.05, 0.6);
+  drawEach(PROC.drops, t + 2.2, 0.3, 0.08);
+  fadeIn(PROC.wireLabels, t + 2.3, 0.4);
+  tl.to(PROC.dot, { opacity: 1, duration: 0.15 }, t + 2.25);
+  tl.to(PROC.dotProx, { x: L.P.cx + 780, duration: 0.8, ease: 'power1.in' }, t + 2.3);
+  tl.to(PROC.dot, { opacity: 0, duration: 0.12 }, t + 3.05);
+  titleIn(3, t + 1.3);
+});
+
+/* ---- Scene 5: the pipeline, drawn as a route over the whole world ---- */
+scene(5, 3.6, t => {
+  titleOut(3, t);
+  hudOff(t);
+  camTo(OVERVIEW, t + 0.1, 2.3);
+  fadeIn(gPaper, t + 0.4, 0.7);
+  fadeIn(gRoute, t + 1.1, 0.3);    /* once the paper is opaque */
+  fadeIn(RT.legend, t + 1.3, 0.6);
+  draw(RT.src.strokes, t + 1.1, 0.35, 0, E.lin);
+  draw(RT.main.strokes, t + 1.4, 1.2, 0, E.lin);
+  draw(RT.comp.strokes, t + 2.55, 0.5, 0, E.lin);
+  draw(RT.viz.strokes, t + 3.0, 0.45, 0, E.lin);
+  RT.stations.forEach((s, i) => {
+    const a = i < 7 ? t + 1.5 + i * 0.15 : i === 7 ? t + 2.55 : t + 2.65 + (i - 8) * 0.12;
+    draw(s.ring.strokes, a, 0.35);
+    fadeIn(s.label, a + 0.1, 0.35);
+  });
+  titleIn(4, t + 2.4);
+});
+
+/* ---- Scenes 6 to 8: Parse (paper) ---- */
+scene(6, 4.0, SC[6]);   /* Tokenize: bytes, characters, tokens */
+scene(7, 3.5, SC[7]);   /* Build the DOM: tree builder and open elements */
+scene(8, 3.6, SC[8]);   /* The DOM is an API: script edits the tree */
+
+/* ---- Scenes 9 to 11: Style (paper) ---- */
+scene(9, 4.0, SC[9]);   /* Match selectors: buckets, candidates, right to left */
+scene(10, 3.6, SC[10]); /* Resolve the cascade: criteria in order */
+scene(11, 3.4, SC[11]); /* Computed style: absolute values, shared groups */
+
+/* ---- Scenes 12 to 15: Layout (paper) ---- */
+scene(12, 4.0, SC[12]); /* The layout tree: no box for head; anonymous block */
+scene(13, 3.6, SC[13]); /* Boxes and constraints: widths down, heights up */
+scene(14, 3.5, SC[14]); /* Lines of text: shaping and line breaking */
+scene(15, 3.4, SC[15]); /* The fragment tree: final geometry, immutable */
+
+/* ---- Scenes 16 to 18: Paint (paper) ---- */
+scene(16, 4.0, SC[16]); /* Property trees: transform, clip, effect, scroll */
+scene(17, 3.5, SC[17]); /* Paint order: phases within a stacking context */
+scene(18, 3.6, SC[18]); /* The display list: ops in chunks by state */
+
+/* ---- Scenes 19 to 21: the handoff and composited layers ---- */
+scene(19, 3.2, SC[19]); /* Commit: across the paper edge */
+scene(20, 3.2, SC[20]); /* Layerize: the page splits into layers */
+scene(21, 3.0, SC[21]); /* Why some things get layers */
+
+/* ---- Scenes 22 to 24: tiles, raster, activate ---- */
+scene(22, 3.4, SC[22]); /* Tiles: priorities NOW, SOON, EVENTUALLY */
+scene(23, 3.0, SC[23]); /* Raster: Skia on the GPU, image decode */
+scene(24, 3.0, SC[24]); /* Activate: pending tree becomes active */
+
+/* ---- Scenes 25 to 27: frames, aggregation, draw ---- */
+scene(25, 3.4, SC[25]); /* Compositor frames: quads and render passes */
+scene(26, 3.1, SC[26]); /* Aggregate: every producer's frame becomes one */
+scene(27, 3.6, SC[27]); /* Draw: the screen lights up again */
+
+/* ---- Scenes 28 to 30: the ending ---- */
+scene(28, 3.9, SC[28]); /* Back to our pixel: anchored zoom in */
+scene(29, 3.9, SC[29]); /* The whole journey: anchored zoom out, products */
+scene(30, 2.4, SC[30]); /* Thank you and questions, with the credit */
+
+/* =====================================================================
+   7. NAVIGATION AND CONTROLS
+   ===================================================================== */
+/* ---------- The script: Markdown from the block at the top ---------- */
+function mdInline(s) {
+  return esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+function parseScript(src) {
+  const out = [], blocks = [];
+  let cur = null;
+  src.split(/\r?\n/).forEach(line => {
+    const m = /^#{1,6}\s+(\d+)?[.)]?\s*(.*)$/.exec(line);
+    if (m) { cur = { n: m[1] ? +m[1] : null, lines: [] }; blocks.push(cur); }
+    else if (cur) cur.lines.push(line);
+  });
+  blocks.forEach((b, i) => {
+    const n = b.n || (i + 1);
+    const paras = b.lines.join('\n').trim().split(/\n\s*\n/).map(p => p.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean);
+    out[n - 1] = { html: paras.map(p => '<p>' + mdInline(p) + '</p>').join(''), text: paras.join(' ').replace(/[`*]/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') };
+  });
+  return out;
+}
+const SCRIPT = parseScript(($('lop-script') || { textContent: '' }).textContent);
+const scriptOf = i => SCRIPT[i] || { html: '', text: '' };
+
+const appEl = $('app'), viewportEl = $('viewport'), stageEl = $('stage');
+const panelEl = $('scriptPanel'), scriptTextEl = $('scriptText'), measureEl = $('measure');
+const btnPrev = $('btnPrev'), btnNext = $('btnNext'), btnScript = $('btnScript');
+const counterEl = $('counter'), chapterEl = $('chapter'), liveEl = $('live'), ticksEl = $('ticks');
+
+/* ---------- Progress ticks, grouped by chapter ---------- */
+const groups = [];
+SCENES.forEach((s, i) => {
+  let gr = groups[groups.length - 1];
+  if (!gr || gr.name !== s.chapter) { gr = { name: s.chapter, idx: [] }; groups.push(gr); }
+  gr.idx.push(i);
+});
+const tickBtns = [];
+groups.forEach(gr => {
+  const box = document.createElement('div'); box.className = 'grp';
+  const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = gr.name;
+  const row = document.createElement('div'); row.className = 'row';
+  box.appendChild(lbl); box.appendChild(row); ticksEl.appendChild(box);
+  gr.box = box;
+  gr.idx.forEach(i => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tick';
+    b.style.setProperty('--c', TICK[SCENES[i].tick]);
+    b.setAttribute('aria-label', 'Scene ' + (i + 1) + ': ' + SCENES[i].title);
+    b.title = (i + 1) + '. ' + SCENES[i].title;
+    b.innerHTML = '<i></i>';
+    b.addEventListener('click', () => go(i));
+    row.appendChild(b);
+    tickBtns[i] = b;
+  });
+});
+
+/* ---------- Layout: stage, script panel (bottom or side), never overlapping ---------- */
+let scriptOn = true;
+try { if (localStorage.getItem('lop-script') === 'off') scriptOn = false; } catch (e) { /* storage unavailable */ }
+const mCache = {};
+function maxScriptHeight(width, fs) {
+  const key = width + '|' + fs;
+  if (mCache[key]) return mCache[key];
+  measureEl.style.cssText = 'position:absolute; left:-9999px; top:0; visibility:hidden; width:' + width + 'px; font-size:' + fs + 'px;';
+  measureEl.className = '';
+  let m = 0;
+  for (let i = 0; i < COUNT; i++) {
+    measureEl.innerHTML = '<div id="scriptPanelM" style="padding:16px 22px 18px 20px; border-left:3px solid transparent; line-height:1.52; font-family:var(--f-hand); font-variation-settings:\'INFM\' 0">' + scriptOf(i).html + '</div>';
+    measureEl.querySelectorAll('p').forEach(p => { p.style.margin = '0 0 .6em'; p.style.maxWidth = '72ch'; });
+    const last = measureEl.querySelector('p:last-child'); if (last) last.style.marginBottom = '0';
+    m = Math.max(m, measureEl.firstChild.offsetHeight);
+  }
+  measureEl.innerHTML = '';
+  return (mCache[key] = m);
+}
+function layout(animate) {
+  const aw = appEl.clientWidth, ah = appEl.clientHeight;
+  if (!aw || !ah) return;
+  const gap = 8;
+  const fs = Math.round(clamp(Math.min(aw / 62, ah / 36), 14, 21));
+  let s = Math.min(aw / W, ah / H), mode = 'none', pw = 0, ph = 0;
+  if (scriptOn) {
+    /* Option A: under the stage. */
+    const guess = Math.min(aw / W, ah * 0.8 / H);
+    const need = maxScriptHeight(Math.round(W * guess), fs);
+    const hB = Math.min(need, Math.round(ah * 0.38));
+    const sB = Math.min(aw / W, (ah - hB - gap) / H);
+    /* Option B: beside the stage. */
+    const wR = Math.round(clamp(aw * 0.3, 240, 460));
+    const sR = Math.min((aw - wR - gap) / W, ah / H);
+    if (sB >= sR * 0.98) { mode = 'bottom'; s = sB; ph = hB; }
+    else { mode = 'right'; s = sR; pw = wR; }
+  }
+  const sw = W * s, sh = H * s;
+  let sx, sy;
+  if (mode === 'bottom') { sx = (aw - sw) / 2; sy = Math.max(0, (ah - sh - ph - gap) / 2); }
+  else if (mode === 'right') { sx = Math.max(0, (aw - sw - pw - gap) / 2); sy = (ah - sh) / 2; }
+  else { sx = (aw - sw) / 2; sy = (ah - sh) / 2; }
+  viewportEl.classList.toggle('anim', !!animate);
+  viewportEl.style.transform = 'translate(' + fmt(sx, 2) + 'px,' + fmt(sy, 2) + 'px) scale(' + s.toFixed(5) + ')';
+  panelEl.style.fontSize = fs + 'px';
+  if (mode === 'bottom') {
+    Object.assign(panelEl.style, { left: fmt(sx, 1) + 'px', top: fmt(sy + sh + gap, 1) + 'px', width: fmt(sw, 1) + 'px', height: ph + 'px' });
+  } else if (mode === 'right') {
+    Object.assign(panelEl.style, { left: fmt(sx + sw + gap, 1) + 'px', top: fmt(sy, 1) + 'px', width: pw + 'px', height: fmt(sh, 1) + 'px' });
+  }
+  panelEl.classList.toggle('off', mode === 'none');
+  panelEl.dataset.mode = mode;
+  updateMore();
+}
+function updateMore() { panelEl.classList.toggle('more', panelEl.scrollTop + panelEl.clientHeight < panelEl.scrollHeight - 2); }
+panelEl.addEventListener('scroll', updateMore, { passive: true });
+function setScript(on) {
+  scriptOn = on;
+  btnScript.setAttribute('aria-pressed', on ? 'true' : 'false');
+  try { localStorage.setItem('lop-script', on ? 'on' : 'off'); } catch (e) { /* storage unavailable */ }
+  layout(true);
+}
+btnScript.addEventListener('click', () => setScript(!scriptOn));
+let rT = 0;
+window.addEventListener('resize', () => { cancelAnimationFrame(rT); rT = requestAnimationFrame(() => layout(false)); });
+
+/* ---------- Scene state ---------- */
+let cur = 0, navTween = null, fadeTween = null, swapTimer = 0, firstUI = true, busy = false;
+const done = () => { busy = false; };
+function updateUI() {
+  const s = SCENES[cur], sc = scriptOf(cur);
+  counterEl.textContent = String(cur + 1).padStart(2, '0') + ' / ' + COUNT;
+  chapterEl.textContent = s.chapter;
+  btnPrev.disabled = cur === 0;
+  btnNext.disabled = cur === COUNT - 1;
+  tickBtns.forEach((b, i) => {
+    b.classList.toggle('now', i === cur);
+    b.classList.toggle('past', i < cur);
+    if (i === cur) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+  });
+  groups.forEach(gr => gr.box.classList.toggle('on', gr.idx.indexOf(cur) >= 0));
+  panelEl.style.setProperty('--thread', TICK[s.tick]);
+  clearTimeout(swapTimer);
+  if (firstUI) { scriptTextEl.innerHTML = sc.html; firstUI = false; updateMore(); }
+  else {
+    scriptTextEl.classList.add('swap');
+    swapTimer = setTimeout(() => { scriptTextEl.innerHTML = sc.html; panelEl.scrollTop = 0; scriptTextEl.classList.remove('swap'); updateMore(); }, 200);
+  }
+  liveEl.textContent = 'Scene ' + (cur + 1) + ' of ' + COUNT + ': ' + s.title + '. ' + sc.text;
+  try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) { /* sandboxed */ }
+}
+function sceneAtTime(t) {
+  let k = 0;
+  for (let i = 0; i < COUNT; i++) if (LABELS[i] <= t + 1e-4) k = i;
+  const next = LABELS[k + 1];
+  return next === undefined ? k : k + (t - LABELS[k]) / (next - LABELS[k]);
+}
+function seekTo(i) { tl.seek(LABELS[i], false); renderAll(); }
+function go(i, instant) {
+  i = clamp(i, 0, COUNT - 1);
+  const wasMoving = busy;
+  cur = i;
+  updateUI();
+  if (navTween) { navTween.kill(); navTween = null; }
+  if (fadeTween) { fadeTween.kill(); fadeTween = null; }
+  const target = LABELS[i], now = tl.time();
+  busy = false;
+  if (instant || reduceMotion) { gsap.set(stageEl, { opacity: 1 }); seekTo(i); return; }
+  if (Math.abs(sceneAtTime(now) - i) > 2.001) {
+    /* Long jumps fade and cut instead of fast-forwarding. */
+    fadeTween = gsap.timeline()
+      .to(stageEl, { opacity: 0, duration: 0.2, ease: 'power1.in' })
+      .add(() => seekTo(i))
+      .to(stageEl, { opacity: 1, duration: 0.4, ease: 'power1.out', onComplete: done });
+    busy = true;
+    return;
+  }
+  gsap.to(stageEl, { opacity: 1, duration: 0.2, overwrite: true });
+  const dist = Math.abs(target - now);
+  if (dist < 1e-4) return;
+  const back = target < now;
+  let dur = back ? dist * 0.72 : dist;
+  if (wasMoving) dur *= 0.6;
+  busy = true;
+  navTween = tl.tweenTo(target, { duration: dur, ease: 'none', onComplete: done });
+}
+btnPrev.addEventListener('click', () => go(cur - 1));
+btnNext.addEventListener('click', () => go(cur + 1));
+document.addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const onButton = e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'A');
+  switch (e.key) {
+    case 'ArrowRight': case 'ArrowDown': case 'PageDown':
+      e.preventDefault(); go(cur + 1); break;
+    case ' ': case 'Enter':
+      if (onButton) return;              /* the focused control handles it */
+      e.preventDefault(); go(cur + 1); break;
+    case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
+      e.preventDefault(); go(cur - 1); break;
+    case 'Home': e.preventDefault(); go(0); break;
+    case 'End': e.preventDefault(); go(COUNT - 1); break;
+    case 's': case 'S': setScript(!scriptOn); break;
+  }
+});
+window.addEventListener('hashchange', () => {
+  const n = parseInt((location.hash || '').slice(1), 10);
+  if (n >= 1 && n <= COUNT && n - 1 !== cur) go(n - 1);
+});
+
+/* ---------- Boot ---------- */
+gsap.ticker.add(renderAll);
+btnScript.setAttribute('aria-pressed', scriptOn ? 'true' : 'false');
+layout(false);
+const fromHash = parseInt((location.hash || '').slice(1), 10);
+if (fromHash >= 2 && fromHash <= COUNT) go(fromHash - 1, true);
+else {
+  cur = 0; updateUI();
+  tl.seek(0, false); renderAll();
+  if (reduceMotion) seekTo(0); else { busy = true; navTween = tl.tweenTo(LABELS[0], { duration: LABELS[0], ease: 'none', onComplete: done }); }
+}
+$('loading').classList.add('done');
+window.__lop = {
+  tl: tl, go: go, labels: LABELS, scenes: SCENES, renderAll: renderAll, layout: layout, setScript: setScript,
+  get cur() { return cur; }, get cam() { return CAM.cur; }, get moving() { return busy; },
+  script: SCRIPT, mon: MON
+};
+
+})();
+</script>
+</body>
+</html>
